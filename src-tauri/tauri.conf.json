@@ -1,9 +1,9 @@
 {
   "build": {
-    "beforeBuildCommand": "pnpm run build",
     "beforeDevCommand": "pnpm run dev",
-    "devPath": "http://localhost:8848",
-    "distDir": "http://localhost:8000"
+    "devPath": "http://localhost:8848/",
+    "beforeBuildCommand": "pnpm run build",
+    "distDir": "../dist"
   },
   "package": {
     "productName": "appscheduler",
