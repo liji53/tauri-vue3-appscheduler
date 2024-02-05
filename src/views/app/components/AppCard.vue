@@ -1,61 +1,23 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import More2Fill from "@iconify-icons/ri/more-2-fill";
-import { hasAuth } from "@/router/utils";
 import { MdPreview } from "md-editor-v3";
 import "md-editor-v3/lib/preview.css";
 
-const props = defineProps(["app", "category", "pagename", "readme"]);
-defineEmits([
-  "install-app",
-  "revision-app",
-  "edit-app",
-  "disable-app",
-  "enable-app",
-  "delete-app",
-  "uninstall-app",
-  "upload-pic",
-  "readme-app"
-]);
+const props = defineProps(["app", "readme"]);
+defineEmits(["install-app", "upgrade-app", "uninstall-app", "readme-app"]);
 
 const infoDialogVisible = ref(false);
 
-const tag_name = computed(() => {
-  if (props.pagename === "store") {
-    return !props.app.status
-      ? "未上架"
-      : props.app.is_installed
-      ? "已安装"
-      : "未安装";
-  } else {
-    return props.app.is_online ? "已上线" : "未上线";
-  }
-});
 const tag_color = computed(() => {
-  if (props.pagename === "store") {
-    return !props.app.status
-      ? "#D3D3D3"
-      : props.app.is_installed
-      ? "#90EE90"
-      : "#00BFFF";
-  } else {
-    return props.app.is_online ? "#90EE90" : "#D3D3D3";
-  }
+  return props.app.status === "已安装" ? "#90EE90" : "#00BFFF";
 });
 
 // 卡片的样式
 const cardClass = computed(() => [
   "list-card-item",
   {
-    "list-card-item__disabled":
-      props.pagename === "store" ? !props.app.status : !props.app.is_online
-  }
-]);
-const cardLogoClass = computed(() => [
-  "list-card-item_detail--logo",
-  {
-    "list-card-item_detail--logo__disabled":
-      props.pagename === "store" ? !props.app.status : !props.app.is_online
+    "list-card-item__disabled": props.app.status === "已安装" ? false : true
   }
 ]);
 </script>
@@ -64,68 +26,40 @@ const cardLogoClass = computed(() => [
   <div :class="cardClass">
     <div class="list-card-item_detail bg-bg_color">
       <!-- logo + 状态 + 操作 -->
-      <el-row justify="space-between">
-        <div
-          :class="cardLogoClass"
-          :style="`background-image: url(${app.banner})`"
-        />
+      <el-row justify="end">
         <div class="list-card-item_detail--operation">
+          <el-tag
+            type="info"
+            effect="dark"
+            class="mx-1 list-card-item_detail--operation--tag"
+          >
+            {{ app.category }}
+          </el-tag>
           <el-tag
             :color="tag_color"
             effect="dark"
             class="mx-1 list-card-item_detail--operation--tag"
           >
-            {{ tag_name }}
+            {{ app.status }}
           </el-tag>
           <el-dropdown trigger="click">
             <IconifyIconOffline :icon="More2Fill" class="text-[24px]" />
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item
-                  v-if="pagename === 'store' && !app.is_installed && app.status"
+                  v-if="app.status === '未安装'"
                   @click="$emit('install-app', app)"
                 >
                   安装
                 </el-dropdown-item>
-                <el-dropdown-item @click="$emit('revision-app', app.id)">
-                  版本
-                </el-dropdown-item>
                 <el-dropdown-item
-                  @click="$emit('edit-app', app)"
-                  v-if="pagename == 'myApp' || hasAuth('btn_update')"
+                  v-if="app.status === '已安装'"
+                  @click="$emit('upgrade-app', app)"
                 >
-                  编辑
+                  升级
                 </el-dropdown-item>
                 <el-dropdown-item
-                  @click="$emit('upload-pic', app)"
-                  v-if="pagename == 'myApp' || hasAuth('btn_update')"
-                >
-                  图标
-                </el-dropdown-item>
-                <el-dropdown-item
-                  v-if="
-                    pagename === 'store' && app.status && hasAuth('btn_update')
-                  "
-                  @click="$emit('disable-app', app.id)"
-                >
-                  下架
-                </el-dropdown-item>
-                <el-dropdown-item
-                  v-if="
-                    pagename === 'store' && !app.status && hasAuth('btn_update')
-                  "
-                  @click="$emit('enable-app', app.id)"
-                >
-                  上架
-                </el-dropdown-item>
-                <el-dropdown-item
-                  v-if="pagename === 'store' && hasAuth('btn_delete')"
-                  @click="$emit('delete-app', app.id)"
-                >
-                  删除
-                </el-dropdown-item>
-                <el-dropdown-item
-                  v-if="pagename === 'myApp'"
+                  v-if="app.status === '已安装'"
                   @click="$emit('uninstall-app', app)"
                 >
                   卸载
@@ -149,14 +83,6 @@ const cardLogoClass = computed(() => [
         <p class="list-card-item_detail--name text-text_color_primary">
           {{ app.name }}
         </p>
-        <el-tag
-          v-if="category !== undefined"
-          type="info"
-          class="mx-1 list-card-item_detail--operation--tag"
-          style="margin-top: 20px; float: right; margin-left: 20px"
-        >
-          {{ category }}
-        </el-tag>
       </el-row>
 
       <p class="list-card-item_detail--desc text-text_color_regular">

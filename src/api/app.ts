@@ -1,61 +1,39 @@
-import { http } from "@/utils/http";
-import { baseUrlApi } from "@/api/utils";
+import { invoke } from "@tauri-apps/api";
 
-type App = {
-  id: number;
+export type App = {
   name: string;
   url: string;
+  category: string;
   description: string;
-  banner: string;
-  status: boolean;
-  is_installed: boolean;
-  category_id: number;
+  status: string;
 };
 type AppResult = {
   total: number;
   data: Array<App>;
 };
 
-// 应用的tree形式
-export type AppTree = {
-  id: number;
-  name: string;
-  children?: Array<AppTree>;
+// app分类
+export const getAppCategories = () => {
+  return invoke<[string?]>("get_app_categories");
 };
-export type AppTreeResult = { data: Array<AppTree> };
-
-export type AppReadmeResult = { data: string };
 
 /** app列表 */
-export const getAppList = (params?: object) => {
-  return http.request<AppResult>("get", baseUrlApi("apps"), { params });
+export const getAppList = (params: object) => {
+  return invoke<AppResult>("get_apps", { ...params });
 };
 
-export const createApp = (data: object) => {
-  return http.post(baseUrlApi("apps"), { data });
+export const installApp = (app_name: string) => {
+  return invoke("install_app", { app_name });
 };
 
-export const updateApp = (app_id: number, data: object) => {
-  return http.put(baseUrlApi(`apps/${app_id}`), { data });
+export const uninstallApp = (app_name: string) => {
+  return invoke("uninstall_app", { app_name });
 };
 
-export const deleteApp = (app_id: number) => {
-  return http.delete(baseUrlApi(`apps/${app_id}`));
+export const ungradeApp = (app_name: string) => {
+  return invoke("ungrade_app", { app_name });
 };
 
-// 上传应用的图片
-export const uploadPic = (app_id: number, data: object) => {
-  return http.upload(baseUrlApi(`apps/${app_id}/banner`), { data });
-};
-
-// 应用配置设计 - 获取应用的tree
-export const getAppTree = () => {
-  return http.request<AppTreeResult>("get", baseUrlApi("apps/tree"));
-};
-
-export const getAppReadme = (app_id: number) => {
-  return http.request<AppReadmeResult>(
-    "get",
-    baseUrlApi(`apps/${app_id}/readme`)
-  );
+export const getAppReadme = (app_name: string) => {
+  return invoke<string>("readme_app", { app_name });
 };

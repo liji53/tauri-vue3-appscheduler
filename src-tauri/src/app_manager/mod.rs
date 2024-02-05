@@ -2,8 +2,54 @@ mod base_app;
 mod schemas;
 mod svn_app;
 use self::base_app::RepoCommand;
+use serde::Serialize;
 use svn_app::SvnRepo;
 use tauri::Window;
+
+#[derive(Serialize)]
+pub struct App {
+    name: String,
+    url: String,
+    category: String,
+    description: String,
+    status: String,
+}
+#[derive(Serialize)]
+pub struct AppList {
+    data: Vec<App>,
+    total: u32,
+}
+
+#[tauri::command]
+pub fn get_app_categories() -> Result<Vec<String>, String> {
+    Ok(vec!["分类1".to_string(), "分类2".to_string()])
+}
+
+#[tauri::command]
+pub fn get_apps(
+    app_name: String,
+    category: String,
+    status: String,
+    page: u32,
+    items_per_page: u32,
+) -> Result<AppList, String> {
+    println!("{app_name}-{category}-{status}-{page}-{items_per_page}");
+    Ok(AppList {
+        data: vec![App {
+            name: "应用1".to_string(),
+            url: "http://10.1.1.1".to_string(),
+            category: "分类1".to_string(),
+            description: "test".to_string(),
+            status: "已安装".to_string(),
+        }],
+        total: 1,
+    })
+}
+
+#[tauri::command]
+pub fn ungrade_app() -> Result<(), String> {
+    Ok(())
+}
 
 #[tauri::command]
 pub fn install_app(repo_url: String) -> Result<(), String> {
