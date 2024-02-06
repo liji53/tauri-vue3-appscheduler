@@ -67,18 +67,20 @@ export function useApp() {
   // 用于响应AppCard的事件
   const handleInstallApp = (app: App) => {
     loading.value = true;
-    installApp(app.name)
+    installApp(app.url)
       .then(() => {
         message("应用安装成功!", { type: "success" });
         onSearch();
       })
       .catch((err: string) => {
         message(err, { type: "error" });
+      })
+      .finally(() => {
+        loading.value = false;
       });
-    loading.value = false;
   };
   const handleUninstallApp = (app: App) => {
-    uninstallApp(app.name)
+    uninstallApp(app.url)
       .then(() => {
         message("应用卸载成功!", { type: "success" });
         onSearch();
@@ -88,17 +90,21 @@ export function useApp() {
       });
   };
   const handleUpgradeApp = (app: App) => {
-    ungradeApp(app.name)
+    loading.value = true;
+    ungradeApp(app.url)
       .then(() => {
         message("应用升级成功!", { type: "success" });
         onSearch();
       })
       .catch((err: string) => {
         message(err, { type: "error" });
+      })
+      .finally(() => {
+        loading.value = false;
       });
   };
   const handleReadmeApp = (app: App) => {
-    getAppReadme(app.name)
+    getAppReadme(app.url)
       .then((response: string) => {
         readme.value = response;
       })

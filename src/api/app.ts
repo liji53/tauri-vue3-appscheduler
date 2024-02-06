@@ -22,18 +22,18 @@ export const getAppList = (params: object) => {
   return invoke<AppResult>("get_apps", { ...params });
 };
 
-export const installApp = (app_name: string) => {
-  return invoke("install_app", { app_name });
+export const installApp = (repoUrl: string) => {
+  return invoke("install_app", { repoUrl });
 };
 
-export const uninstallApp = (app_name: string) => {
-  return invoke("uninstall_app", { app_name });
+export const uninstallApp = (repoUrl: string) => {
+  return invoke("uninstall_app", { repoUrl });
 };
 
-export const ungradeApp = (app_name: string) => {
-  return invoke("ungrade_app", { app_name });
+export const ungradeApp = (repoUrl: string) => {
+  return invoke("ungrade_app", { repoUrl });
 };
 
-export const getAppReadme = (app_name: string) => {
-  return invoke<string>("readme_app", { app_name });
+export const getAppReadme = (repoUrl: string) => {
+  return invoke<string>("readme_app", { repoUrl });
 };

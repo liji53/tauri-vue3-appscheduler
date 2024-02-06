@@ -1,10 +1,9 @@
 use super::schemas::{FormData, FormItem, Log, Notice, NoticeItem, RunAppPayload};
-
 use chrono::{DateTime, Local};
 use ini::Ini;
 use rand::Rng;
 use serde_json::Value;
-use sha1::{Digest, Sha1};
+
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
@@ -25,16 +24,16 @@ pub trait RepoCommand {
     fn cat(&self, file_path: &str) -> Result<String, String> {
         let file = Path::new(self.local_path()).join(file_path);
         if !file.exists() {
-            return Err("readme.md文件不存在".to_string());
+            return Err("文件不存在".to_string());
         }
         fs::read_to_string(file.to_string_lossy().to_string())
-            .map_err(|e| format!("readme.md文件读取失败: {}", e))
+            .map_err(|e| format!("文件读取异常: {}", e))
     }
 
     /// 删除本地仓库
     fn delete(&self) -> Result<(), String> {
         println!("delete dir: {}", self.local_path());
-        fs::remove_dir_all(self.local_path()).map_err(|e| format!("删除本地应用失败: {}", e))
+        fs::remove_dir_all(self.local_path()).map_err(|e| format!("{}", e))
     }
 
     /// 安装python项目中的依赖库，pip install -r requirements.txt
@@ -253,20 +252,4 @@ fn task_config_form(
             default_config_form(config)
         }
     }
-}
-
-/// 将python项目地址转化为本地安装路径，在windows中项目位于C:\USERS\XXX\.appscheduler 目录下
-pub fn url_to_local_path(url: &String) -> String {
-    let mut hasher = Sha1::new();
-    hasher.update(url.as_bytes());
-    let result = hasher.finalize();
-
-    let mut user_path = ".".to_string(); // 默认当前路径
-    if let Ok(user_profile) = env::var("USERPROFILE") {
-        user_path = user_profile;
-    }
-    let path = Path::new(user_path.as_str())
-        .join(".appscheduler")
-        .join(format!("{:x}", result));
-    return path.to_string_lossy().to_string();
 }

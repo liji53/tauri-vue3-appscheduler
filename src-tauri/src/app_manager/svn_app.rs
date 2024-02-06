@@ -1,4 +1,5 @@
-use super::base_app::{url_to_local_path, RepoCommand};
+use super::base_app::RepoCommand;
+use super::utils;
 use std::process::Command;
 
 pub struct SvnRepo {
@@ -8,7 +9,7 @@ pub struct SvnRepo {
 impl SvnRepo {
     pub fn new(url: String) -> SvnRepo {
         return SvnRepo {
-            local_path: url_to_local_path(&url),
+            local_path: utils::url_to_local_path(&url),
             url,
         };
     }
