@@ -17,6 +17,9 @@ pub trait RepoCommand {
     /// 使用版本管理工具，导出仓库(python项目)
     fn checkout(&self) -> Result<(), String>;
 
+    /// 升级本地仓库到最新
+    fn update(&self) -> Result<(), String>;
+
     // 读取远程仓库中指定文件的内容
     fn remote_cat(url: &str) -> Result<String, String>;
 

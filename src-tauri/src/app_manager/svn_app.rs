@@ -14,11 +14,12 @@ impl SvnRepo {
         };
     }
 }
+
+// todo: 用户名和密码 从配置中读取
 impl RepoCommand for SvnRepo {
     fn local_path(&self) -> &String {
         &self.local_path
     }
-    // todo: 用户名和密码 从配置中读取
     fn remote_cat(url: &str) -> Result<String, String> {
         let output = Command::new("svn")
             .arg("cat")
@@ -35,7 +36,22 @@ impl RepoCommand for SvnRepo {
             Err(format!("原因：{}", stderr))
         }
     }
-    // todo: 用户名和密码 从配置中读取
+    fn update(&self) -> Result<(), String> {
+        let output = Command::new("svn")
+            .arg("update")
+            .arg(&self.local_path)
+            .arg("--non-interactive")
+            .arg("--trust-server-cert")
+            .output()
+            .map_err(|e| format!("原因：{}", e))?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            eprintln!("svn update失败，原因: {}", stderr);
+            Err(format!("原因：{}", stderr))
+        }
+    }
     fn checkout(&self) -> Result<(), String> {
         /* 默认使用本地svn的账号 */
         let output = Command::new("svn")

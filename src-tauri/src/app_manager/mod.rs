@@ -99,8 +99,11 @@ pub fn uninstall_app(repo_url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn ungrade_app() -> Result<(), String> {
-    Err("尚未实现".to_string())
+pub fn ungrade_app(repo_url: String) -> Result<(), String> {
+    let svn_repo = SvnRepo::new(repo_url);
+    svn_repo
+        .update()
+        .map_err(|e| format!("升级应用失败, {}", e))
 }
 
 #[tauri::command]
