@@ -1,3 +1,32 @@
+#[derive(serde::Serialize)]
+pub struct App {
+    pub name: String,
+    pub url: String,
+    pub category: String,
+    pub description: String,
+    pub status: String,
+}
+#[derive(serde::Serialize)]
+pub struct AppList {
+    pub data: Vec<App>,
+    pub total: u32,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct AppStoreItem {
+    pub name: String,
+    pub category: String,
+    pub url: String,
+    pub online: Option<bool>,
+    pub remark: Option<String>,
+    pub config: Option<serde_json::Value>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct AppStoreConfig {
+    pub app_list: Vec<AppStoreItem>,
+}
+
 #[derive(Clone, serde::Serialize)]
 pub struct NoticeItem {
     pub avatar: String,

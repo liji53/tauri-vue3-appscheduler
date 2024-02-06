@@ -17,7 +17,24 @@ impl RepoCommand for SvnRepo {
     fn local_path(&self) -> &String {
         &self.local_path
     }
-
+    // todo: 用户名和密码 从配置中读取
+    fn remote_cat(url: &str) -> Result<String, String> {
+        let output = Command::new("svn")
+            .arg("cat")
+            .arg(url)
+            .arg("--non-interactive")
+            .arg("--trust-server-cert")
+            .output()
+            .map_err(|e| format!("原因：{}", e))?;
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            eprintln!("svn cat失败，原因: {}", stderr);
+            Err(format!("原因：{}", stderr))
+        }
+    }
+    // todo: 用户名和密码 从配置中读取
     fn checkout(&self) -> Result<(), String> {
         /* 默认使用本地svn的账号 */
         let output = Command::new("svn")
@@ -27,13 +44,13 @@ impl RepoCommand for SvnRepo {
             .arg("--non-interactive")
             .arg("--trust-server-cert")
             .output()
-            .map_err(|e| format!("执行svn checkout失败: {}", e))?;
+            .map_err(|e| format!("原因: {}", e))?;
         if output.status.success() {
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
             eprintln!("svn checkout 失败: {}", stderr);
-            Err("执行svn checkout失败".to_string())
+            Err(format!("原因：{}", stderr))
         }
     }
 }

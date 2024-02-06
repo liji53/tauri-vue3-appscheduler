@@ -1,28 +1,28 @@
 mod base_app;
 mod schemas;
 mod svn_app;
+mod utils;
 use self::base_app::RepoCommand;
-use serde::Serialize;
+use schemas::{App, AppList, AppStoreConfig, AppStoreItem};
+use std::collections::HashSet;
 use svn_app::SvnRepo;
 use tauri::Window;
 
-#[derive(Serialize)]
-pub struct App {
-    name: String,
-    url: String,
-    category: String,
-    description: String,
-    status: String,
-}
-#[derive(Serialize)]
-pub struct AppList {
-    data: Vec<App>,
-    total: u32,
-}
-
 #[tauri::command]
 pub fn get_app_categories() -> Result<Vec<String>, String> {
-    Ok(vec!["分类1".to_string(), "分类2".to_string()])
+    let error = "获取应用分类失败，";
+    // 读取远程仓库中的配置文件
+    let content = utils::cached_app_store_config().map_err(|e| String::from(error) + &e)?;
+    let app_config: AppStoreConfig = serde_json::from_str(&content)
+        .map_err(|_| String::from(error) + "配置文件json格式异常!")?;
+
+    // 获取应用的分类
+    let mut categories = HashSet::new();
+    for item in app_config.app_list.into_iter() {
+        categories.insert(item.category);
+    }
+    let categories: Vec<String> = categories.into_iter().collect();
+    Ok(categories)
 }
 
 #[tauri::command]
@@ -34,21 +34,43 @@ pub fn get_apps(
     items_per_page: u32,
 ) -> Result<AppList, String> {
     println!("{app_name}-{category}-{status}-{page}-{items_per_page}");
+    let error = "获取应用列表失败，";
+    let content = utils::cached_app_store_config().map_err(|e| String::from(error) + &e)?;
+    let app_config: AppStoreConfig = serde_json::from_str(&content)
+        .map_err(|_| String::from(error) + "配置文件json格式异常!")?;
+
+    // 基于入参过滤
+    let app_store_list: Vec<AppStoreItem> = app_config
+        .app_list
+        .into_iter()
+        .filter(|item| {
+            (app_name.is_empty() || item.name == app_name)
+                && (category.is_empty() || item.category == category)
+        })
+        .collect();
+
+    // todo: 是否安装的状态从数据库中读取
+    let app_store_list = utils::paginate(&app_store_list, page, items_per_page);
+    let apps: Vec<App> = app_store_list
+        .into_iter()
+        .map(|i| App {
+            name: i.name.to_string(),
+            url: i.url.to_string(),
+            category: i.category.to_string(),
+            description: i.remark.to_owned().unwrap_or("".to_string()),
+            status: "未安装".to_string(),
+        })
+        .collect();
+
     Ok(AppList {
-        data: vec![App {
-            name: "应用1".to_string(),
-            url: "http://10.1.1.1".to_string(),
-            category: "分类1".to_string(),
-            description: "test".to_string(),
-            status: "已安装".to_string(),
-        }],
-        total: 1,
+        total: apps.len() as u32,
+        data: apps,
     })
 }
 
 #[tauri::command]
 pub fn ungrade_app() -> Result<(), String> {
-    Ok(())
+    Err("尚未实现".to_string())
 }
 
 #[tauri::command]

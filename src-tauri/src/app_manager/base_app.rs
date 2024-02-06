@@ -15,8 +15,11 @@ use tauri::Window;
 pub trait RepoCommand {
     fn local_path(&self) -> &String;
 
-    /// 使用版本管理工具，导出python项目
+    /// 使用版本管理工具，导出仓库(python项目)
     fn checkout(&self) -> Result<(), String>;
+
+    // 读取远程仓库中指定文件的内容
+    fn remote_cat(url: &str) -> Result<String, String>;
 
     /// 读取本地仓库中指定文件的内容
     fn cat(&self, file_path: &str) -> Result<String, String> {
