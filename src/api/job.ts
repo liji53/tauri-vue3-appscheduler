@@ -1,17 +1,16 @@
-import { http } from "@/utils/http";
-import { baseUrlApi } from "@/api/utils";
+import { invoke } from "@tauri-apps/api";
 
 type Job = {
   id: number;
   name: string;
-  project: string;
-  project_id: number;
-  app_id: number; // 指的是已安装的应用
   remark: string;
-  status: boolean;
+  status: boolean; // 是否启用
   next_at: string;
   updated_at: string;
   cron: string;
+
+  app_name: string;
+  category: string;
   url: string;
 };
 type JobResult = {
@@ -19,32 +18,34 @@ type JobResult = {
   data: Array<Job>;
 };
 
-type TaskTree = {
-  id?: number;
-  name: string;
-  children?: Array<TaskTree>;
-};
-type TaskTreeResult = {
-  data: Array<TaskTree>;
-};
-
-export const getJobList = (params?: object) => {
-  return http.request<JobResult>("get", baseUrlApi("tasks"), { params });
+// 获取任务列表
+export const getJobList = (params: object) => {
+  return invoke<JobResult>("get_jobs", { ...params });
 };
 
 export const createJob = (data: object) => {
-  return http.post(baseUrlApi("tasks"), { data });
+  return invoke("create_job", { data: JSON.stringify(data) });
 };
 
 export const updateJob = (job_id: number, data: object) => {
-  return http.put(baseUrlApi(`tasks/${job_id}`), { data });
+  return invoke("update_job", { id: job_id, data: JSON.stringify(data) });
 };
 
 export const deleteJob = (job_id: number) => {
-  return http.delete(baseUrlApi(`tasks/${job_id}`));
+  return invoke("delete_job", { id: job_id });
 };
 
-// 异常监控
-export const getTaskTree = () => {
-  return http.request<TaskTreeResult>("get", baseUrlApi("tasks/tree"));
+// 手动执行任务
+export const runJob = (job_id: number) => {
+  return invoke("run_job", { id: job_id });
+};
+
+// 获取任务的配置
+export const getJobConfig = (job_id: number) => {
+  return invoke("get_job_config", { id: job_id });
+};
+
+// 设置任务的配置
+export const setJobConfig = (job_id: number, data: object) => {
+  return invoke("set_job_config", { id: job_id, data: JSON.stringify(data) });
 };

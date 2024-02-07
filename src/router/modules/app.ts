@@ -10,9 +10,7 @@ export default {
       path: "/app/store",
       name: "Store",
       component: () => import("@/views/app/store.vue"),
-      meta: {
-        title: "应用商城"
-      }
+      meta: { title: "应用商城" }
     }
   ]
 } as RouteConfigsTable;

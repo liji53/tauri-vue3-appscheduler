@@ -12,6 +12,13 @@ type AppResult = {
   data: Array<App>;
 };
 
+// 应用的tree形式
+type AppTree = {
+  name: string;
+  children?: Array<AppTree>;
+};
+export type AppTreeResult = Array<AppTree>;
+
 // app分类
 export const getAppCategories = () => {
   return invoke<[string?]>("get_app_categories");
@@ -36,4 +43,8 @@ export const ungradeApp = (repoUrl: string) => {
 
 export const getAppReadme = (repoUrl: string) => {
   return invoke<string>("readme_app", { repoUrl });
+};
+
+export const getAppTree = () => {
+  return invoke<AppTreeResult>("get_app_tree");
 };

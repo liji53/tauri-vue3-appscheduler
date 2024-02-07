@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { jobFormRules } from "../utils/rule";
+import { ref, reactive } from "vue";
 import { JobFormProps } from "../utils/types";
+
+const jobFormRules = reactive({
+  app_name: [{ required: true, message: "必须选择一个应用", trigger: "blur" }],
+  name: [{ required: true, message: "必须填写任务名称", trigger: "blur" }]
+});
 
 const props = withDefaults(defineProps<JobFormProps>(), {
   formInline: () => ({
     name: "",
     remark: "",
-    project_id: null,
-    app_id: null,
-    projects: [],
+    app_name: "",
     apps: []
   })
 });
 const TreeProps = ref({
-  value: "id",
+  value: "name",
   label: "name",
   children: "children"
 });
@@ -25,17 +27,17 @@ const newFormInline = ref(props.formInline);
 function getRef() {
   return ruleFormRef.value;
 }
-const onSelectChnage = (value: any) => {
+const onSelectChnage = (value: string) => {
   for (const app of newFormInline.value.apps) {
     if ("children" in app) {
       for (const child of app["children"]) {
-        if (child.id === value) {
+        if (child.name === value) {
           newFormInline.value.name = child.name;
           console.log(newFormInline.value.name);
         }
       }
     } else {
-      if (app.id === value) {
+      if (app.name === value) {
         newFormInline.value.name = app.name;
         console.log(newFormInline.value.name);
       }
@@ -53,9 +55,9 @@ defineExpose({ getRef });
     :rules="jobFormRules"
     label-width="82px"
   >
-    <el-form-item label="应用" prop="app_id">
+    <el-form-item label="应用" prop="app_name">
       <el-tree-select
-        v-model="newFormInline.app_id"
+        v-model="newFormInline.app_name"
         :props="TreeProps"
         :data="newFormInline.apps"
         :render-after-expand="false"
@@ -70,21 +72,6 @@ defineExpose({ getRef });
         clearable
         placeholder="请输入任务名称"
       />
-    </el-form-item>
-
-    <el-form-item label="项目" prop="project_id">
-      <el-select
-        v-model="newFormInline.project_id"
-        placeholder="请选择项目"
-        clearable
-      >
-        <el-option
-          v-for="(item, index) in newFormInline.projects"
-          :key="index"
-          :value="item.id"
-          :label="item.name"
-        />
-      </el-select>
     </el-form-item>
     <el-form-item label="备注">
       <el-input

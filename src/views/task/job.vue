@@ -28,7 +28,6 @@ const {
   loading,
   columns,
   dataList,
-  projects,
   pagination,
   onSearch,
   resetForm,
@@ -41,7 +40,6 @@ const {
   handleCurrentChange,
   crontabVisible,
   cronFormData,
-  //onChangeCron,
   onCancelCron,
   onConfirmCron,
   taskConifgVisible,
@@ -49,7 +47,8 @@ const {
   handleConfirmConfig,
   logVisible,
   log,
-  handleLog
+  handleLog,
+  categories
 } = useJob();
 </script>
 
@@ -69,30 +68,19 @@ const {
           class="!w-[200px]"
         />
       </el-form-item>
-      <el-form-item label="项目：" prop="project_id">
+      <el-form-item label="应用分类：" prop="category">
         <el-select
-          v-model="form.project_id"
-          placeholder="请选择项目"
+          v-model="form.category"
+          placeholder="请选择应用分类"
           clearable
           class="!w-[180px]"
         >
           <el-option
-            v-for="(item, index) in projects"
+            v-for="(item, index) in categories"
             :key="index"
-            :value="item.id"
-            :label="item.name"
+            :value="item"
+            :label="item"
           />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="状态：" prop="status">
-        <el-select
-          v-model="form.status"
-          placeholder="请选择状态"
-          clearable
-          class="!w-[180px]"
-        >
-          <el-option label="启用" value="true" />
-          <el-option label="停用" value="false" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -204,7 +192,7 @@ const {
               />
             </el-tooltip>
             <el-popconfirm
-              :title="`是否确认删除项目 ${row.name}`"
+              :title="`是否确认删除任务 ${row.name}`"
               @confirm="handleDelete(row)"
             >
               <template #reference>

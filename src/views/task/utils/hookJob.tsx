@@ -1,17 +1,22 @@
 import dayjs from "dayjs";
 import editForm from "../components/jobForm.vue";
 import { message } from "@/utils/message";
-import { getJobList, createJob, updateJob, deleteJob } from "@/api/job";
+import {
+  getJobList,
+  createJob,
+  updateJob,
+  deleteJob,
+  runJob,
+  getJobConfig,
+  setJobConfig
+} from "@/api/job";
+import { getAppTree, type AppTreeResult } from "@/api/app";
 import { getRecentlyLog, type Log } from "@/api/job_log";
-import { getMyAppTree } from "@/api/installed_app";
-import { getProjectList } from "@/api/project";
-import { getAppForm } from "@/api/app_form";
 import { ElMessageBox } from "element-plus";
 import { addDialog } from "@/components/ReDialog";
 import { type JobItemProps } from "./types";
 import { type PaginationProps } from "@pureadmin/table";
 import { reactive, ref, onMounted, h, computed, toRaw } from "vue";
-import { invoke } from "@tauri-apps/api";
 
 const nextAtStyle = computed(() => {
   return (next_at: string) => {
@@ -29,14 +34,13 @@ export function useJob() {
   // header 表单的数据
   const form = reactive({
     name: "",
-    project_id: "",
-    status: "",
+    category: "",
     page: 1,
     itemsPerPage: 10
   });
   const dataList = ref([]); // 任务列表
-  const projects = ref([]); // 项目列表
-  const apps = ref([]); // 安装的应用的树结构
+  const apps = ref<AppTreeResult>(); // 安装的应用的树结构
+  const categories = ref([]);
   const loading = ref(true);
   const formRef = ref();
   const switchLoadMap = ref({});
@@ -78,8 +82,8 @@ export function useJob() {
       minWidth: 120
     },
     {
-      label: "项目",
-      prop: "project",
+      label: "应用分类",
+      prop: "category",
       minWidth: 120
     },
     {
@@ -149,7 +153,7 @@ export function useJob() {
         draggable: true
       }
     )
-      .then(async () => {
+      .then(() => {
         switchLoadMap.value[index] = Object.assign(
           {},
           switchLoadMap.value[index],
@@ -157,11 +161,14 @@ export function useJob() {
             loading: true
           }
         );
-        await updateJob(row.id, { status: row.status })
-          .then(async () => {
-            message(`已${row.status === false ? "停用" : "启用"}${row.name}`, {
-              type: "success"
-            });
+        updateJob(row.id, { status: row.status })
+          .then(() => {
+            message(
+              `已${row.status === false ? "停用" : "启用"}【${row.name}】`,
+              {
+                type: "success"
+              }
+            );
           })
           .catch(() => {
             // 请求失败，恢复状态
@@ -182,17 +189,16 @@ export function useJob() {
       });
   }
   // 手动执行任务(异步，在通知栏中listen任务完成的事件)
-  async function handleRun(row) {
-    invoke("run_app", { repoUrl: row.url, taskName: row.name, taskId: row.id })
+  function handleRun(row) {
+    runJob(row.id)
       .then(() => {
+        // 异步执行
         message(`开始运行【${row.name}】`, {
           type: "success"
         });
       })
       .catch(error => {
-        message(`运行【${row.name}】失败: ${error}`, {
-          type: "error"
-        });
+        message(error, { type: "error" });
       });
   }
 
@@ -202,61 +208,39 @@ export function useJob() {
     cronFormData.cron = row["cron"];
     crontabVisible.value = true;
   }
-  // const onChangeCron = val => {
-  //   if (typeof val !== "string") return false;
-  //   cronFormData.cron = val;
-  // };
   const onCancelCron = () => {
     crontabVisible.value = false;
   };
   const onConfirmCron = async () => {
-    if (cronFormData.cron != null && cronFormData.cron.trim() === "") {
-      await updateJob(cronFormData.id, { cron: null });
-    } else {
-      await updateJob(cronFormData.id, { cron: cronFormData.cron });
-    }
-
-    message(`成功设置定时任务`, {
-      type: "success"
-    });
-    crontabVisible.value = false;
-    onSearch();
+    updateJob(cronFormData.id, { cron: cronFormData.cron })
+      .then(() => {
+        message(`设置定时任务成功`, {
+          type: "success"
+        });
+        crontabVisible.value = false;
+        onSearch();
+      })
+      .catch(error => {
+        message(error, { type: "error" });
+      });
   };
 
   // 设置任务的配置
   function handleConfig(row) {
-    getAppForm({ task_id: row.id }).then(response => {
-      invoke("getconfig_app", {
-        repoUrl: row.url,
-        appForm: response.form === null ? "[]" : response.form,
-        taskId: row.id
+    getJobConfig(row.id)
+      .then((response: string) => {
+        taskConfigData.value = JSON.parse(response);
+        taskConifgVisible.value = true;
+        taskRow.value = row;
       })
-        .then((response: string) => {
-          if (response === "") {
-            message(`应用【${row.name}】不需要配置`, {
-              type: "warning"
-            });
-          } else {
-            taskConfigData.value = JSON.parse(response);
-            taskConifgVisible.value = true;
-            taskRow.value = row;
-          }
-        })
-        .catch(error => {
-          message(`应用【${row.name}】的配置异常: ${error}`, {
-            type: "error"
-          });
-        });
-    });
+      .catch(error => {
+        message(error, { type: "error" });
+      });
   }
   function handleConfirmConfig(formRef, config) {
     formRef.validate(async valid => {
       if (valid) {
-        invoke("setconfig_app", {
-          repoUrl: taskRow.value.url,
-          taskId: taskRow.value.id,
-          config: JSON.stringify(config)
-        })
+        setJobConfig(taskRow.value.id, config)
           .then(() => {
             message("配置设置成功", { type: "success" });
           })
@@ -269,10 +253,14 @@ export function useJob() {
 
   // 删除任务
   function handleDelete(row) {
-    deleteJob(row.id).then(() => {
-      message(`您删除了任务-${row.name}`, { type: "success" });
-      onSearch();
-    });
+    deleteJob(row.id)
+      .then(() => {
+        message(`删除任务成功`, { type: "success" });
+        onSearch();
+      })
+      .catch((error: string) => {
+        message(error, { type: "error" });
+      });
   }
 
   // 分页
@@ -294,6 +282,9 @@ export function useJob() {
         dataList.value = data.data;
         pagination.total = data.total;
       })
+      .catch((err: string) => {
+        message(err, { type: "error" });
+      })
       .finally(() => {
         loading.value = false;
       });
@@ -313,9 +304,7 @@ export function useJob() {
           id: row?.id ?? "",
           name: row?.name ?? "",
           remark: row?.remark ?? "",
-          project_id: row?.project_id ?? "",
-          app_id: row?.app_id ?? "",
-          projects: projects,
+          app_name: row?.app_name ?? "",
           apps: apps
         }
       },
@@ -361,12 +350,14 @@ export function useJob() {
 
   onMounted(() => {
     onSearch();
-    getProjectList().then(response => {
-      projects.value = response.data;
-    });
-    getMyAppTree().then(response => {
-      apps.value = response.data;
-    });
+    getAppTree()
+      .then((response: AppTreeResult) => {
+        apps.value = response;
+        categories.value = response.map(item => item.name);
+      })
+      .catch(error => {
+        message(error, { type: "error" });
+      });
   });
 
   return {
@@ -374,7 +365,6 @@ export function useJob() {
     loading,
     columns,
     dataList,
-    projects,
     pagination,
     onSearch,
     resetForm,
@@ -387,7 +377,6 @@ export function useJob() {
     handleCurrentChange,
     crontabVisible,
     cronFormData,
-    //onChangeCron,
     onCancelCron,
     onConfirmCron,
     taskConifgVisible,
@@ -395,6 +384,7 @@ export function useJob() {
     handleConfirmConfig,
     logVisible,
     log,
-    handleLog
+    handleLog,
+    categories
   };
 }
