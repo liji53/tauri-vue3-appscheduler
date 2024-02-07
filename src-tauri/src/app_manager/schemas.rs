@@ -7,7 +7,7 @@ pub struct App {
     pub status: String,
 }
 #[derive(serde::Serialize)]
-pub struct AppList {
+pub struct AppPagination {
     pub data: Vec<App>,
     pub total: u32,
 }

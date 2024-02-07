@@ -1,5 +1,8 @@
-use super::RepoCommand;
-use super::SvnRepo;
+pub mod base_app;
+pub mod svn_app;
+
+use self::base_app::RepoCommand;
+use self::svn_app::SvnRepo;
 use cached::proc_macro::once;
 use sha1::{Digest, Sha1};
 
