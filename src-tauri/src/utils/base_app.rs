@@ -1,6 +1,9 @@
-use std::fs;
+use super::schemas::{Notice, NoticeItem};
+use chrono::{DateTime, Local};
 use std::path::Path;
 use std::process::Command;
+use std::{env, fs, thread};
+use tauri::Window;
 
 // 版本管理工具命令 接口
 pub trait RepoCommand {
@@ -53,5 +56,76 @@ pub trait RepoCommand {
             );
             Err("执行pip install失败".to_string())
         }
+    }
+
+    /// 执行应用程序，python main.py
+    fn run_app(&self, window: Window, task_name: String, task_id: u32) -> Result<(), String> {
+        let repo_path = self.local_path().clone();
+        let path = Path::new(&repo_path).join("main.py");
+        if !path.exists() {
+            return Err("项目中不存在main.py".to_string());
+        }
+        // 多线程执行任务
+        thread::spawn(move || {
+            // 起一个进程执行 python main.py
+            let _ = env::set_current_dir(repo_path);
+            let output = Command::new("python")
+                .arg("main.py")
+                .output()
+                .map_err(|e| format!("执行python main.py报错: {}", e));
+
+            // 解析任务执行的结果
+            let mut success = false;
+            let description: String;
+            let log_content: String;
+            match output {
+                Ok(ret) => {
+                    if ret.status.success() {
+                        success = true;
+                        description = "任务执行成功".to_string();
+                        log_content = String::from_utf8_lossy(&ret.stdout).to_string();
+                    } else {
+                        description = "任务脚本执行报错".to_string();
+                        log_content = String::from_utf8_lossy(&ret.stderr).to_string();
+                    }
+                }
+                Err(e) => {
+                    description = e.clone();
+                    log_content = e;
+                }
+            }
+
+            // 通知js，任务执行的结果
+            let now: DateTime<Local> = Local::now();
+            let formatted_time = now.format("%m-%d %H:%M:%S").to_string();
+            window
+                .emit(
+                    "run_app_result",
+                    Notice{
+                            name: "任务结果".to_string(),
+                            list: vec![NoticeItem {
+                                title: task_name,
+                                avatar: "https://gw.alipayobjects.com/zos/rmsportal/ThXAXghbEsBCCSDihZxY.png".to_string(),
+                                datetime: formatted_time,
+                                r#type: "1".to_string(),
+                                description,
+                                status: if success {"success".to_string()} else {"danger".to_string()},
+                                extra: if success {"成功".to_string()} else {"失败".to_string()},
+                            }],
+                        }
+                )
+                .unwrap();
+
+            println!("{task_id} - {log_content}")
+            // todo: 记入日志
+            // log: Log{
+            //     status: success,
+            //     execute_type: "手动".to_string(),
+            //     content: log_content,
+            //     task_id
+            // }
+        });
+
+        Ok(())
     }
 }

@@ -20,6 +20,7 @@ impl RepoCommand for SvnRepo {
     fn local_path(&self) -> &String {
         &self.local_path
     }
+
     fn remote_cat(url: &str) -> Result<String, String> {
         let output = Command::new("svn")
             .arg("cat")
@@ -36,6 +37,7 @@ impl RepoCommand for SvnRepo {
             Err(format!("原因：{}", stderr))
         }
     }
+
     fn update(&self) -> Result<(), String> {
         let output = Command::new("svn")
             .arg("update")
@@ -52,6 +54,7 @@ impl RepoCommand for SvnRepo {
             Err(format!("原因：{}", stderr))
         }
     }
+
     fn checkout(&self) -> Result<(), String> {
         /* 默认使用本地svn的账号 */
         let output = Command::new("svn")

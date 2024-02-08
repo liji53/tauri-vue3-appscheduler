@@ -14,3 +14,29 @@ pub struct AppStoreItem {
 pub struct AppStoreConfig {
     pub app_list: Vec<AppStoreItem>,
 }
+
+/// 与JS通信相关的数据结构
+#[derive(Clone, serde::Serialize)]
+pub struct NoticeItem {
+    pub avatar: String,
+    pub title: String,
+    pub datetime: String,
+    pub r#type: String,
+    pub description: String,
+    pub status: String,
+    pub extra: String,
+}
+/// 用于通知栏的数据格式
+#[derive(Clone, serde::Serialize)]
+pub struct Notice {
+    pub name: String,
+    pub list: Vec<NoticeItem>,
+}
+/// 服务器后端保存的日志格式
+#[derive(Clone, serde::Serialize)]
+pub struct Log {
+    pub status: bool,
+    pub execute_type: String,
+    pub content: String,
+    pub task_id: u32,
+}

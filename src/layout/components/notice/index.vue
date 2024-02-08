@@ -2,8 +2,7 @@
 import { ref, Ref, computed } from "vue";
 // import { noticesData } from "./data";
 import NoticeList from "./noticeList.vue";
-import { TabItem, RunAppPayload } from "@/api/notice";
-import { createLog } from "@/api/job_log";
+import { TabItem } from "@/api/notice";
 import Bell from "@iconify-icons/ep/bell";
 import { ElNotification } from "element-plus";
 import { listen } from "@tauri-apps/api/event";
@@ -12,8 +11,7 @@ const notices: Ref<TabItem[]> = ref([]);
 
 listen("run_app_result", (event: any) => {
   // 通知栏消息
-  const payload: RunAppPayload = event.payload;
-  const msg: TabItem = payload.notice;
+  const msg: TabItem = event.payload;
 
   let is_exists = false;
   notices.value.forEach(item => {
@@ -34,8 +32,6 @@ listen("run_app_result", (event: any) => {
       message: message.description
     });
   }
-  // 上传执行日志
-  createLog(payload.log);
 });
 
 const noticesNum = computed(() => {

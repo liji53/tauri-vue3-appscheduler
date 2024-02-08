@@ -2,13 +2,13 @@ pub mod base_app;
 pub mod schemas;
 pub mod svn_app;
 
-use std::path::PathBuf;
-
 use self::base_app::RepoCommand;
 use self::schemas::AppStoreConfig;
 use self::svn_app::SvnRepo;
 use cached::proc_macro::{cached, once};
+use rusqlite::{Connection, Result};
 use sha1::{Digest, Sha1};
+use std::path::PathBuf;
 
 const CONFIG_URL: &str = "https://192.168.57.30/secu/dep1/UftdbSett/trunk/Documents/D5.Others/产品质量提升工具脚本/S6_项目辅助类工具/config.json";
 
@@ -63,4 +63,13 @@ pub fn url_to_local_path(url: &String) -> String {
 pub fn exists_project(url: &String) -> bool {
     let local_path = url_to_local_path(url);
     std::path::Path::new(&local_path).exists()
+}
+
+pub fn db_session(error: Option<&str>) -> Result<Connection, String> {
+    match error {
+        Some(error) => {
+            Connection::open(program_db_path()).map_err(|_| format!("{}, 数据库链接异常", error))
+        }
+        None => Connection::open(program_db_path()).map_err(|_| "数据库链接异常".to_string()),
+    }
 }
