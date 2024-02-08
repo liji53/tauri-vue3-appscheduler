@@ -22,11 +22,12 @@ pub fn cached_app_store_config() -> Result<AppStoreConfig, String> {
 }
 
 /// 对Vec数据进行分页
-pub fn paginate<T>(data: &[T], page: u32, items_per_page: u32) -> Vec<&T> {
+pub fn paginate<T>(data: Vec<T>, page: u32, items_per_page: u32) -> Vec<T> {
     let start = ((page - 1) * items_per_page) as usize;
     // 计算结束索引，但不超过数据总长度
     let end = std::cmp::min(start + items_per_page as usize, data.len());
-    data[start..end].iter().collect()
+    data.into_iter().skip(start).take(end - start).collect()
+    //data[start..end].iter().collect()
 }
 
 /// 本程序的数据目录(包括安装应用时下载的项目、db等)

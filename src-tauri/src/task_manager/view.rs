@@ -10,10 +10,10 @@ pub fn get_jobs(
     name: String,
     category: String,
     page: u32,
-    itemsPerPage: u32,
+    items_per_page: u32,
 ) -> Result<JobPagination, String> {
     let error = "获取任务列表失败";
-    // 查询数据库，获取任务列表
+    // 查询数据库，获取所有的任务列表
     let conn = Connection::open(utils::program_db_path())
         .map_err(|_| format!("{}, 数据库链接异常", error))?;
     let jobs = service::get_all(&conn).map_err(|e| format!("{}, {}", error, e))?;
@@ -31,6 +31,17 @@ pub fn get_jobs(
             url: job.url,
         })
         .collect();
+
+    // 根据条件，过滤
+    let jobs: Vec<Job> = jobs
+        .into_iter()
+        .filter(|item| {
+            (name.is_empty() || item.name.contains(&name))
+                && (category.is_empty() || item.category == category)
+        })
+        .collect();
+    // 分页
+    let jobs = utils::paginate(jobs, page, items_per_page);
     Ok(JobPagination {
         total: jobs.len() as u32,
         data: jobs,

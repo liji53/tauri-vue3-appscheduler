@@ -49,19 +49,19 @@ pub fn get_apps(
         })
         .collect();
 
-    let app_store_list = utils::paginate(&app_store_list, page, items_per_page);
+    let app_store_list = utils::paginate(app_store_list, page, items_per_page);
     let apps: Vec<App> = app_store_list
         .into_iter()
         .map(|i| App {
-            name: i.name.to_string(),
-            url: i.url.to_string(),
-            category: i.category.to_string(),
-            description: i.remark.to_owned().unwrap_or("".to_string()),
+            name: i.name,
             status: if utils::exists_project(&i.url) {
                 String::from(INSTALLED)
             } else {
                 String::from(UNINSTALLED)
             },
+            url: i.url,
+            category: i.category,
+            description: i.remark.unwrap_or("".to_string()),
         })
         .collect();
 
@@ -121,11 +121,16 @@ pub fn readme_app(repo_url: String) -> Result<String, String> {
 
 #[tauri::command]
 pub fn get_app_tree() -> Result<Vec<AppTree>, String> {
-    let error = "获取分类应用树失败";
+    let error = "获取应用分类树失败";
     // 读取远程仓库中的配置文件
     let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
+    // 获取已经安装的应用，format：{应用分类: [{安装的应用名}]}
     let mut app_categories = HashMap::new();
     for item in app_config.app_list.into_iter() {
+        if !utils::exists_project(&item.url) {
+            // 应用没有安装
+            continue;
+        }
         if !app_categories.contains_key(&item.category) {
             app_categories.insert(item.category, vec![item.name]);
         } else {
@@ -135,6 +140,7 @@ pub fn get_app_tree() -> Result<Vec<AppTree>, String> {
                 .push(item.name)
         }
     }
+    // 格式转化
     let mut ret = Vec::new();
     for item in app_categories {
         let tmp: Vec<AppTreeChildren> = item

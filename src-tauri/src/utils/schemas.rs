@@ -4,7 +4,7 @@
 pub struct AppStoreItem {
     pub name: String,
     pub category: String,
-    pub url: String,
+    pub url: String, // 由于没有用数据库设计，因此该字段作为唯一ID，作用类似于 数据库的主键
     pub online: Option<bool>,
     pub remark: Option<String>,
     pub config: Option<serde_json::Value>,
