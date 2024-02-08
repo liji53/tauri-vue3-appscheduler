@@ -6,7 +6,7 @@ type Job = {
   remark: string;
   status: boolean; // 是否启用
   next_at: string;
-  updated_at: string;
+  // updated_at: string;
   cron: string;
 
   app_name: string;

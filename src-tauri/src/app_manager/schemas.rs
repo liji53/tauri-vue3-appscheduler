@@ -1,3 +1,5 @@
+/// 与JS通信的数据模型
+
 #[derive(serde::Serialize)]
 pub struct App {
     pub name: String,
@@ -12,19 +14,14 @@ pub struct AppPagination {
     pub total: u32,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct AppStoreItem {
+#[derive(serde::Serialize)]
+pub struct AppTreeChildren {
     pub name: String,
-    pub category: String,
-    pub url: String,
-    pub online: Option<bool>,
-    pub remark: Option<String>,
-    pub config: Option<serde_json::Value>,
 }
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct AppStoreConfig {
-    pub app_list: Vec<AppStoreItem>,
+#[derive(serde::Serialize)]
+pub struct AppTree {
+    pub name: String,
+    pub children: Vec<AppTreeChildren>,
 }
 
 #[derive(Clone, serde::Serialize)]

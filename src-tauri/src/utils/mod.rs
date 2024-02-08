@@ -1,17 +1,24 @@
 pub mod base_app;
+pub mod schemas;
 pub mod svn_app;
 
+use std::path::PathBuf;
+
 use self::base_app::RepoCommand;
+use self::schemas::AppStoreConfig;
 use self::svn_app::SvnRepo;
-use cached::proc_macro::once;
+use cached::proc_macro::{cached, once};
 use sha1::{Digest, Sha1};
 
 const CONFIG_URL: &str = "https://192.168.57.30/secu/dep1/UftdbSett/trunk/Documents/D5.Others/产品质量提升工具脚本/S6_项目辅助类工具/config.json";
 
 /// 获取应用配置，并缓存60s
 #[once(time = 60, sync_writes = true)]
-pub fn cached_app_store_config() -> Result<String, String> {
-    SvnRepo::remote_cat(CONFIG_URL)
+pub fn cached_app_store_config() -> Result<AppStoreConfig, String> {
+    // 必须显示指定数据类型(编译器不报错)，否则json解析转struct失败
+    let ret: AppStoreConfig = serde_json::from_str(&SvnRepo::remote_cat(CONFIG_URL)?)
+        .map_err(|_| "配置文件json格式异常!")?;
+    Ok(ret)
 }
 
 /// 对Vec数据进行分页
@@ -22,20 +29,32 @@ pub fn paginate<T>(data: &[T], page: u32, items_per_page: u32) -> Vec<&T> {
     data[start..end].iter().collect()
 }
 
+/// 本程序的数据目录(包括安装应用时下载的项目、db等)
+#[cached]
+fn program_data_path() -> PathBuf {
+    // 在windows中项目位于C:\USERS\XXX\.appscheduler 目录下
+    let mut user_path = ".".to_string();
+    if let Ok(user_profile) = std::env::var("USERPROFILE") {
+        user_path = user_profile;
+    }
+    std::path::Path::new(&user_path).join(".appscheduler")
+}
+
+/// 本程序的数据库文件
+pub fn program_db_path() -> String {
+    program_data_path()
+        .join("appscheduler.db")
+        .to_string_lossy()
+        .to_string()
+}
+
 /// 将仓库地址转化为本地安装路径
 pub fn url_to_local_path(url: &String) -> String {
     let mut hasher = Sha1::new();
     hasher.update(url.as_bytes());
     let result = hasher.finalize();
 
-    // 在windows中项目位于C:\USERS\XXX\.appscheduler 目录下
-    let mut user_path = ".".to_string();
-    if let Ok(user_profile) = std::env::var("USERPROFILE") {
-        user_path = user_profile;
-    }
-    let path = std::path::Path::new(user_path.as_str())
-        .join(".appscheduler")
-        .join(format!("{:x}", result));
+    let path = program_data_path().join(format!("{:x}", result));
     return path.to_string_lossy().to_string();
 }
 

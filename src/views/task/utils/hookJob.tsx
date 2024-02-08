@@ -121,13 +121,13 @@ export function useJob() {
         </el-tag>
       )
     },
-    {
-      label: "更新时间",
-      minWidth: 160,
-      prop: "updated_at",
-      formatter: ({ updated_at }) =>
-        dayjs(updated_at).format("YYYY-MM-DD HH:mm:ss")
-    },
+    // {
+    //   label: "更新时间",
+    //   minWidth: 160,
+    //   prop: "updated_at",
+    //   formatter: ({ updated_at }) =>
+    //     dayjs(updated_at).format("YYYY-MM-DD HH:mm:ss")
+    // },
     {
       label: "操作",
       fixed: "right",

@@ -1,19 +1,19 @@
-use super::schemas::{App, AppPagination, AppStoreConfig, AppStoreItem};
+use super::schemas::{App, AppPagination, AppTree, AppTreeChildren};
 use crate::utils;
 use crate::utils::base_app::RepoCommand;
+use crate::utils::schemas::AppStoreItem;
 use crate::utils::svn_app::SvnRepo;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const INSTALLED: &str = "已安装";
 const UNINSTALLED: &str = "未安装";
 
+/// 获取应用分类
 #[tauri::command]
 pub fn get_app_categories() -> Result<Vec<String>, String> {
     let error = "获取应用分类失败";
     // 读取远程仓库中的配置文件
-    let content = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
-    let app_config: AppStoreConfig = serde_json::from_str(&content)
-        .map_err(|_| format!("{}, {}", error, "配置文件json格式异常!"))?;
+    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
 
     // 获取应用的分类
     let mut categories = HashSet::new();
@@ -24,6 +24,7 @@ pub fn get_app_categories() -> Result<Vec<String>, String> {
     Ok(categories)
 }
 
+/// 获取应用列表
 #[tauri::command]
 pub fn get_apps(
     app_name: String,
@@ -33,9 +34,7 @@ pub fn get_apps(
     items_per_page: u32,
 ) -> Result<AppPagination, String> {
     let error = "获取应用列表失败";
-    let content = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
-    let app_config: AppStoreConfig = serde_json::from_str(&content)
-        .map_err(|_| format!("{}, {}", error, "配置文件json格式异常!"))?;
+    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
 
     // 基于入参过滤
     let app_store_list: Vec<AppStoreItem> = app_config
@@ -72,6 +71,7 @@ pub fn get_apps(
     })
 }
 
+/// 安装应用，下载远程应用到本地
 #[tauri::command]
 pub fn install_app(repo_url: String) -> Result<(), String> {
     if repo_url.ends_with(".git") {
@@ -86,6 +86,7 @@ pub fn install_app(repo_url: String) -> Result<(), String> {
         .map_err(|e| format!("安装应用成功, 但{}", e))
 }
 
+/// 卸载应用
 #[tauri::command]
 pub fn uninstall_app(repo_url: String) -> Result<(), String> {
     let svn_repo = SvnRepo::new(repo_url);
@@ -94,6 +95,7 @@ pub fn uninstall_app(repo_url: String) -> Result<(), String> {
         .map_err(|e| format!("卸载应用失败, {}", e))
 }
 
+/// 升级应用
 #[tauri::command]
 pub fn ungrade_app(repo_url: String) -> Result<(), String> {
     let svn_repo = SvnRepo::new(repo_url);
@@ -102,6 +104,7 @@ pub fn ungrade_app(repo_url: String) -> Result<(), String> {
         .map_err(|e| format!("升级应用失败, {}", e))
 }
 
+/// 获取应用的详情(readme.md)
 #[tauri::command]
 pub fn readme_app(repo_url: String) -> Result<String, String> {
     let error = "获取详情失败";
@@ -114,4 +117,35 @@ pub fn readme_app(repo_url: String) -> Result<String, String> {
             .cat("readme.md")
             .map_err(|e| format!("{}, {}", error, e))
     }
+}
+
+#[tauri::command]
+pub fn get_app_tree() -> Result<Vec<AppTree>, String> {
+    let error = "获取分类应用树失败";
+    // 读取远程仓库中的配置文件
+    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
+    let mut app_categories = HashMap::new();
+    for item in app_config.app_list.into_iter() {
+        if !app_categories.contains_key(&item.category) {
+            app_categories.insert(item.category, vec![item.name]);
+        } else {
+            app_categories
+                .get_mut(&item.category)
+                .unwrap()
+                .push(item.name)
+        }
+    }
+    let mut ret = Vec::new();
+    for item in app_categories {
+        let tmp: Vec<AppTreeChildren> = item
+            .1
+            .into_iter()
+            .map(|app_name| AppTreeChildren { name: app_name })
+            .collect();
+        ret.push(AppTree {
+            name: item.0,
+            children: tmp,
+        });
+    }
+    Ok(ret)
 }
