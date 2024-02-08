@@ -26,6 +26,15 @@ pub struct JobCreate {
     pub app_name: String,
 }
 
+#[derive(serde::Deserialize, Debug)]
+pub struct JobUpdate {
+    pub name: Option<String>,
+    pub remark: Option<String>,
+    pub app_name: Option<String>,
+    pub status: Option<bool>,
+    pub cron: Option<String>,
+}
+
 /// DB models
 pub struct JobModel {
     pub id: Option<u32>,

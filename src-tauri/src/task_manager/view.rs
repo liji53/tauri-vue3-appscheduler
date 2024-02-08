@@ -1,10 +1,10 @@
-use super::schemas::{Job, JobCreate, JobModel, JobPagination};
+use super::schemas::{Job, JobCreate, JobModel, JobPagination, JobUpdate};
 use super::service;
 use crate::utils;
 use rusqlite::{Connection, Result};
 // use tauri::Window;
 
-// todo: 查询优化, 过滤
+// todo: next_at 的实现
 #[tauri::command]
 pub fn get_jobs(
     name: String,
@@ -48,11 +48,12 @@ pub fn get_jobs(
     })
 }
 
+/// 新建任务
 #[tauri::command]
 pub fn create_job(data: String) -> Result<(), String> {
     let error = "创建任务失败";
     let job: JobCreate =
-        serde_json::from_str(&data).map_err(|_| format!("{}, 内部异常：参数转json失败", error))?;
+        serde_json::from_str(&data).map_err(|_| format!("{}, 参数转json失败", error))?;
 
     // 读取远程仓库中的配置文件, 并找到对应的配置项
     let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
@@ -64,7 +65,7 @@ pub fn create_job(data: String) -> Result<(), String> {
         // db创建job
         let conn = Connection::open(utils::program_db_path())
             .map_err(|_| format!("{}, 数据库链接异常", error))?;
-        service::create_job(
+        service::create(
             &conn,
             &JobModel {
                 id: None,
@@ -81,6 +82,29 @@ pub fn create_job(data: String) -> Result<(), String> {
     } else {
         Err(format!("{}, 配置文件中不存在该应用", error))
     }
+}
+
+/// 删除任务
+#[tauri::command]
+pub fn delete_job(id: u32) -> Result<(), String> {
+    let error = "删除任务失败";
+    let conn = Connection::open(utils::program_db_path())
+        .map_err(|_| format!("{}, 数据库链接异常", error))?;
+
+    service::delete(&conn, id).map_err(|e| format!("{}, {}", error, e))
+}
+
+/// 更新任务(包括 状态、cron)
+#[tauri::command]
+pub fn update_job(id: u32, data: String) -> Result<(), String> {
+    let error = "更新任务失败";
+    let job_in: JobUpdate =
+        serde_json::from_str(&data).map_err(|_| format!("{}, 参数转json失败", error))?;
+    // println!("{:?}", job_in);
+    let conn = Connection::open(utils::program_db_path())
+        .map_err(|_| format!("{}, 数据库链接异常", error))?;
+
+    service::update(&conn, id, &job_in).map_err(|e| format!("{}, {}", error, e))
 }
 
 // #[tauri::command]
