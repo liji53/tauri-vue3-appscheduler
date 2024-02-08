@@ -57,6 +57,36 @@ pub fn get_by_id(conn: &Connection, id: u32) -> Result<Option<JobModel>, String>
     }
 }
 
+pub fn get_by_name(conn: &Connection, name: &String) -> Result<Option<JobModel>, String> {
+    let sql_stmt =
+        "SELECT id, name, remark, status, cron, app_name, category, url FROM task WHERE name = ?1";
+    let mut stmt = conn.prepare(&sql_stmt).unwrap();
+
+    let mut job_iter = stmt
+        .query_map([name], |row| {
+            Ok(JobModel {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                remark: row.get(2)?,
+                status: row.get(3)?,
+                cron: row.get(4)?,
+                app_name: row.get(5)?,
+                category: row.get(6)?,
+                url: row.get(7)?,
+            })
+        })
+        .map_err(|_| "数据库查询异常!")?;
+
+    //
+    if let Some(result) = job_iter.next() {
+        result
+            .map(Some)
+            .map_err(|e| format!("数据库查询异常: {}", e))
+    } else {
+        Ok(None) // 没有找到指定ID的Task
+    }
+}
+
 pub fn create(conn: &Connection, job_in: &JobModel) -> Result<(), String> {
     conn.execute(
         "INSERT INTO task (name, remark, status, cron, app_name, category, url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",

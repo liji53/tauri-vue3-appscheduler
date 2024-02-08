@@ -21,7 +21,7 @@ fn main() {
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS Task (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
+                    name TEXT NOT NULL UNIQUE,
                     remark TEXT,
                     status BOOLEAN DEFAULT true,
                     create_at DATETIME DEFAULT CURRENT_TIMESTAMP,                    

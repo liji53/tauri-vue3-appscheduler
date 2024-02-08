@@ -51,7 +51,7 @@ pub fn get_jobs(
 #[tauri::command]
 pub fn create_job(data: String) -> Result<(), String> {
     let error = "创建任务失败";
-    let job: JobCreate =
+    let job_in: JobCreate =
         serde_json::from_str(&data).map_err(|_| format!("{}, 参数转json失败", error))?;
 
     // 读取远程仓库中的配置文件, 并找到对应的配置项
@@ -59,24 +59,28 @@ pub fn create_job(data: String) -> Result<(), String> {
     if let Some(app_store_item) = app_config
         .app_list
         .iter()
-        .find(|item| item.name == job.app_name)
+        .find(|item| item.name == job_in.app_name)
     {
         // db创建job
         let conn = utils::db_session(Some(error))?;
-        service::create(
-            &conn,
-            &JobModel {
-                id: None,
-                name: job.name,
-                remark: job.remark,
-                status: true,
-                cron: "".to_string(),
-                app_name: job.app_name,
-                category: app_store_item.category.to_string(),
-                url: app_store_item.url.to_string(),
-            },
-        )
-        .map_err(|e| format!("{}, {}", error, e))
+        let job = service::get_by_name(&conn, &job_in.name).map_err(|e| format!("{error}, {e}"))?;
+        match job {
+            None => service::create(
+                &conn,
+                &JobModel {
+                    id: None,
+                    name: job_in.name,
+                    remark: job_in.remark,
+                    status: true,
+                    cron: "".to_string(),
+                    app_name: job_in.app_name,
+                    category: app_store_item.category.to_string(),
+                    url: app_store_item.url.to_string(),
+                },
+            )
+            .map_err(|e| format!("{}, {}", error, e)),
+            Some(_) => Err(format!("{error}, 存在同名的任务")),
+        }
     } else {
         Err(format!("{}, 配置文件中不存在该应用", error))
     }
@@ -92,6 +96,7 @@ pub fn delete_job(id: u32) -> Result<(), String> {
 }
 
 /// 更新任务(包括 状态、cron)
+/// todo: 更新存在相同的task name，报错需要完善
 #[tauri::command]
 pub fn update_job(id: u32, data: String) -> Result<(), String> {
     let error = "更新任务失败";

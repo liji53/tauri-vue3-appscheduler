@@ -327,13 +327,21 @@ export function useJob() {
           if (valid) {
             // 表单规则校验通过
             if (title === "新增") {
-              createJob(curData).then(() => {
-                chores();
-              });
+              createJob(curData)
+                .then(() => {
+                  chores();
+                })
+                .catch(error => {
+                  message(error, { type: "error" });
+                });
             } else {
-              updateJob(curData.id, curData).then(() => {
-                chores();
-              });
+              updateJob(curData.id, curData)
+                .then(() => {
+                  chores();
+                })
+                .catch(error => {
+                  message(error, { type: "error" });
+                });
             }
           }
         });

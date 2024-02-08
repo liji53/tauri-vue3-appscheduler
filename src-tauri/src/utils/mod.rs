@@ -8,7 +8,7 @@ use self::svn_app::SvnRepo;
 use cached::proc_macro::{cached, once};
 use rusqlite::{Connection, Result};
 use sha1::{Digest, Sha1};
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 const CONFIG_URL: &str = "https://192.168.57.30/secu/dep1/UftdbSett/trunk/Documents/D5.Others/产品质量提升工具脚本/S6_项目辅助类工具/config.json";
 
@@ -38,7 +38,11 @@ fn program_data_path() -> PathBuf {
     if let Ok(user_profile) = std::env::var("USERPROFILE") {
         user_path = user_profile;
     }
-    std::path::Path::new(&user_path).join(".appscheduler")
+    let data_path = std::path::Path::new(&user_path).join(".appscheduler");
+    if !data_path.exists() {
+        fs::create_dir_all(&data_path).unwrap()
+    }
+    data_path
 }
 
 /// 本程序的数据库文件
