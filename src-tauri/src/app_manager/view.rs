@@ -18,7 +18,9 @@ pub fn get_app_categories() -> Result<Vec<String>, String> {
     // 获取应用的分类
     let mut categories = HashSet::new();
     for item in app_config.app_list.into_iter() {
-        categories.insert(item.category);
+        if item.online.is_some_and(|online| online) {
+            categories.insert(item.category);
+        }
     }
     let categories: Vec<String> = categories.into_iter().collect();
     Ok(categories)
@@ -41,7 +43,8 @@ pub fn get_apps(
         .app_list
         .into_iter()
         .filter(|item| {
-            (app_name.is_empty() || item.name.contains(&app_name))
+            (item.online.is_none() || item.online.is_some_and(|x| x)) // 配置了在线
+                && (app_name.is_empty() || item.name.contains(&app_name))
                 && (category.is_empty() || item.category == category)
                 && (status.is_empty()
                     || (utils::exists_project(&item.url)
@@ -119,16 +122,17 @@ pub fn readme_app(repo_url: String) -> Result<String, String> {
     }
 }
 
+/// 基于分类-应用的层次，返回前端el-select-tree要求的树形结构(应用管理中用到)
 #[tauri::command]
 pub fn get_app_tree() -> Result<Vec<AppTree>, String> {
     let error = "获取应用分类树失败";
     // 读取远程仓库中的配置文件
     let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
-    // 获取已经安装的应用，format：{应用分类: [{安装的应用名}]}
+    // 获取已经安装的应用，format：{应用分类: [安装的应用名]}
     let mut app_categories = HashMap::new();
     for item in app_config.app_list.into_iter() {
-        if !utils::exists_project(&item.url) {
-            // 应用没有安装
+        if !utils::exists_project(&item.url) || item.online.is_some_and(|online| !online) {
+            // 应用没有安装,或者下线了
             continue;
         }
         if !app_categories.contains_key(&item.category) {
