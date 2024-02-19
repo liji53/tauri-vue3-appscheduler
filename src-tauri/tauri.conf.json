@@ -55,10 +55,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 768,
+        "height": 600,
         "resizable": true,
         "title": "应用管理",
-        "width": 1024
+        "width": 800
       }
     ]
   }

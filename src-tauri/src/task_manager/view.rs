@@ -1,7 +1,8 @@
-use super::schemas::{Job, JobCreate, JobModel, JobPagination, JobUpdate};
+use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobUpdate};
 use super::service;
 use crate::utils;
-use crate::utils::base_app::RepoCommand;
+use crate::utils::{base_app::RepoCommand, svn_app::SvnRepo};
+use std::{fs, path::Path};
 use tauri::Window;
 
 // todo: next_at 的实现
@@ -119,12 +120,42 @@ pub fn run_job(window: Window, id: u32) -> Result<(), String> {
 
     // 异步执行任务
     let job = job.unwrap();
-    let svn_repo = utils::svn_app::SvnRepo::new(job.url);
+    let svn_repo = SvnRepo::new(job.url);
     svn_repo
         .run_app(window, job.name, job.id.unwrap())
         .map_err(|e| format!("{}, {}", error, e))
 }
 
+/// 获取任务执行的日志
+#[tauri::command]
+pub fn get_job_log(id: u32) -> Result<JobLog, String> {
+    let error = "获取日志失败";
+    let conn = utils::db_session(Some(error))?;
+    let job = service::get_by_id(&conn, id)?;
+    if job.is_none() {
+        return Err(format!("{}, 该任务不存在", error));
+    }
+
+    // 读取日志内容
+    let job = job.unwrap();
+    let svn_repo = SvnRepo::new(job.url);
+    let log_content = svn_repo
+        .cat(&utils::task_log_file(id))
+        .map_err(|e| format!("{error}, {e}"))?;
+
+    // 获取日志修改时间
+    let log_path = Path::new(&svn_repo.local_path()).join(utils::task_log_file(id));
+    let file_metadata = fs::metadata(log_path).map_err(|e| format!("{error}, {e}"))?;
+    let modified_time = file_metadata
+        .modified()
+        .map_err(|e| format!("{error}, {e}"))?;
+    let modified_time: chrono::DateTime<chrono::Local> = modified_time.into();
+
+    Ok(JobLog {
+        created_at: format!("{}", modified_time.format("%Y-%m-%d %H:%M:%S")),
+        content: log_content,
+    })
+}
 // #[tauri::command]
 // pub fn getconfig_app(repo_url: String, app_form: String, task_id: u32) -> Result<String, String> {
 //     let svn_repo: SvnRepo = SvnRepo::new(repo_url);

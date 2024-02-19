@@ -8,10 +8,11 @@ import {
   deleteJob,
   runJob,
   getJobConfig,
-  setJobConfig
+  setJobConfig,
+  type Log,
+  getJobLog
 } from "@/api/job";
 import { getAppTree, type AppTreeResult } from "@/api/app";
-import { getRecentlyLog, type Log } from "@/api/job_log";
 import { ElMessageBox } from "element-plus";
 import { addDialog } from "@/components/ReDialog";
 import { type JobItemProps } from "./types";
@@ -68,11 +69,8 @@ export function useJob() {
   // 运行日志
   const logVisible = ref(false);
   const log = ref<Log>({
-    status: false,
-    id: null,
-    log_type: null,
-    execute_type: null,
-    created_at: null
+    created_at: "",
+    content: ""
   });
 
   const columns: TableColumnList = [
@@ -349,11 +347,15 @@ export function useJob() {
     });
   }
   // 查看日志
-  function handleLog(row) {
-    getRecentlyLog({ task_id: row.id }).then((response: Log) => {
-      log.value = response;
-      logVisible.value = true;
-    });
+  function handleLog(row: JobItemProps) {
+    getJobLog(row.id)
+      .then((response: Log) => {
+        log.value = response;
+        logVisible.value = true;
+      })
+      .catch(error => {
+        message(error, { type: "error" });
+      });
   }
 
   onMounted(() => {

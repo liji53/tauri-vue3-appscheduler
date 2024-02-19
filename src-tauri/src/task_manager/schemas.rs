@@ -35,6 +35,12 @@ pub struct JobUpdate {
     pub cron: Option<String>,
 }
 
+#[derive(serde::Serialize)]
+pub struct JobLog {
+    pub created_at: String, // 执行时间
+    pub content: String,
+}
+
 /// DB models
 pub struct JobModel {
     pub id: Option<u32>,

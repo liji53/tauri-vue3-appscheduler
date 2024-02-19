@@ -223,7 +223,7 @@ const {
         </pure-table>
       </template>
     </PureTableBar>
-
+    <!-- 定时设置 -->
     <el-drawer
       v-model="crontabVisible"
       direction="rtl"
@@ -259,19 +259,21 @@ const {
         </span>
       </template>
     </el-drawer>
+    <!-- 任务配置 -->
     <el-dialog v-model="taskConifgVisible" title="任务配置" :key="dynFormKey">
       <dynForm
         :formJson="taskConfigData"
         @confirm-config="handleConfirmConfig"
       />
     </el-dialog>
+    <!-- 任务日志 -->
     <el-dialog
       v-model="logVisible"
-      :title="`日志执行${log.status ? '成功' : '失败'}`"
+      :title="`任务执行日志-${log.created_at}`"
       fullscreen
     >
       <el-input
-        v-if="log.content != ''"
+        v-if="log.content !== ''"
         type="textarea"
         disabled
         v-model="log.content"

@@ -1,5 +1,7 @@
 use super::schemas::{Notice, NoticeItem};
+use super::task_log_file;
 use chrono::{DateTime, Local};
+use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use std::{env, fs, thread};
@@ -19,8 +21,8 @@ pub trait RepoCommand {
     fn remote_cat(url: &str) -> Result<String, String>;
 
     /// 读取本地仓库中指定文件的内容
-    fn cat(&self, file_path: &str) -> Result<String, String> {
-        let file = Path::new(self.local_path()).join(file_path);
+    fn cat(&self, file_name: &str) -> Result<String, String> {
+        let file = Path::new(self.local_path()).join(file_name);
         if !file.exists() {
             return Err("文件不存在".to_string());
         }
@@ -59,16 +61,21 @@ pub trait RepoCommand {
     }
 
     /// 执行应用程序，python main.py
+    /// todo: 指定配置参数
     fn run_app(&self, window: Window, task_name: String, task_id: u32) -> Result<(), String> {
         let repo_path = self.local_path().clone();
         let path = Path::new(&repo_path).join("main.py");
         if !path.exists() {
+            if let Ok(mut fd) = fs::File::create(Path::new(&repo_path).join(task_log_file(task_id)))
+            {
+                let _ = fd.write_all("项目中不存在main.py".as_bytes());
+            }
             return Err("项目中不存在main.py".to_string());
         }
         // 多线程执行任务
         thread::spawn(move || {
             // 起一个进程执行 python main.py
-            let _ = env::set_current_dir(repo_path);
+            let _ = env::set_current_dir(&repo_path);
             let output = Command::new("python")
                 .arg("main.py")
                 .output()
@@ -116,14 +123,11 @@ pub trait RepoCommand {
                 )
                 .unwrap();
 
-            println!("{task_id} - {log_content}")
-            // todo: 记入日志
-            // log: Log{
-            //     status: success,
-            //     execute_type: "手动".to_string(),
-            //     content: log_content,
-            //     task_id
-            // }
+            // 记入日志
+            if let Ok(mut fd) = fs::File::create(Path::new(&repo_path).join(task_log_file(task_id)))
+            {
+                let _ = fd.write_all(log_content.as_bytes());
+            }
         });
 
         Ok(())

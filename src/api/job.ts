@@ -18,6 +18,11 @@ type JobResult = {
   data: Array<Job>;
 };
 
+export type Log = {
+  created_at: string; // 执行时间
+  content: string;
+};
+
 // 获取任务列表
 export const getJobList = (params: object) => {
   return invoke<JobResult>("get_jobs", { ...params });
@@ -48,4 +53,8 @@ export const getJobConfig = (job_id: number) => {
 // 设置任务的配置
 export const setJobConfig = (job_id: number, data: object) => {
   return invoke("set_job_config", { id: job_id, data: JSON.stringify(data) });
+};
+
+export const getJobLog = (job_id: number) => {
+  return invoke<Log>("get_job_log", { id: job_id });
 };
