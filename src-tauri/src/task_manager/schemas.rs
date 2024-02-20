@@ -5,7 +5,7 @@ pub struct Job {
     pub name: String,
     pub remark: String,
     pub status: bool, // 是否启用
-    pub next_at: String,
+    pub next_at: Option<String>,
     pub cron: String,
 
     pub app_name: String,
@@ -42,6 +42,7 @@ pub struct JobLog {
 }
 
 /// DB models
+#[derive(Debug)]
 pub struct JobModel {
     pub id: Option<u32>,
     pub name: String,

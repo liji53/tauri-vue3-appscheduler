@@ -2,7 +2,9 @@ use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobUpdate}
 use super::service;
 use crate::utils;
 use crate::utils::{base_app::RepoCommand, svn_app::SvnRepo};
+use chrono::Local;
 use serde_json::Value;
+use std::str::FromStr;
 use std::{fs, path::Path};
 use tauri::Window;
 
@@ -20,16 +22,31 @@ pub fn get_jobs(
     let jobs = service::get_all(&conn).map_err(|e| format!("{}, {}", error, e))?;
     let jobs: Vec<Job> = jobs
         .into_iter()
-        .map(|job| Job {
-            id: job.id.unwrap(),
-            name: job.name,
-            remark: job.remark,
-            status: job.status,
-            next_at: "2024-02-07 03:26:00".to_string(),
-            cron: job.cron,
-            app_name: job.app_name,
-            category: job.category,
-            url: job.url,
+        .map(|job| {
+            let mut next_at = None;
+            // cron 库不支持5位的cron表达式
+            if let Ok(schedule) = cron::Schedule::from_str(&("0 ".to_string() + job.cron.as_str()))
+            {
+                next_at = Some(
+                    schedule
+                        .upcoming(Local)
+                        .next()
+                        .unwrap()
+                        .format("%Y-%m-%d %H:%M:%S")
+                        .to_string(),
+                );
+            }
+            Job {
+                id: job.id.unwrap(),
+                name: job.name,
+                remark: job.remark,
+                status: job.status,
+                next_at,
+                cron: job.cron,
+                app_name: job.app_name,
+                category: job.category,
+                url: job.url,
+            }
         })
         .collect();
 
@@ -188,9 +205,9 @@ pub fn get_job_config(id: u32) -> Result<String, String> {
 /// 设置任务的配置
 #[tauri::command]
 pub fn set_job_config(id: u32, data: String) -> Result<(), String> {
-    let error = "保存配置失败";        
+    let error = "保存配置失败";
     let job_config_in: Value =
-        serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;    
+        serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
 
     // 从DB中找到Job
     let conn = utils::db_session(Some(error))?;
