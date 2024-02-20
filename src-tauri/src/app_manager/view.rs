@@ -18,9 +18,10 @@ pub fn get_app_categories() -> Result<Vec<String>, String> {
     // 获取应用的分类
     let mut categories = HashSet::new();
     for item in app_config.app_list.into_iter() {
-        if item.online.is_some_and(|online| online) {
-            categories.insert(item.category);
+        if item.online.is_some_and(|online| !online) {
+            continue;
         }
+        categories.insert(item.category);
     }
     let categories: Vec<String> = categories.into_iter().collect();
     Ok(categories)
