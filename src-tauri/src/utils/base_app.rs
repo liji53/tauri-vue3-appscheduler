@@ -1,6 +1,11 @@
-use super::schemas::{Notice, NoticeItem};
-use super::task_log_file;
+use super::schemas::{
+    AppStoreConfigProp, AppStoreItem, FormData, FormEntry, FormItemConfig, FormItems, Notice,
+    NoticeItem,
+};
+use super::{is_selectd_componet, task_config_file, task_log_file};
 use chrono::{DateTime, Local};
+use indexmap::IndexMap;
+use ini::Ini;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
@@ -131,5 +136,101 @@ pub trait RepoCommand {
         });
 
         Ok(())
+    }
+
+    /// 获取当前任务的配置(注：配置的section会忽略，不能存在相同的key，如有相同的key最后的生效)
+    /// todo: 支持多section、考虑应用升级的情况
+    fn get_config(&self, app_store_item: AppStoreItem, task_id: u32) -> Result<String, String> {
+        // 如果有设置过配置，则用该任务的配置，没有则用默认配置
+        let mut config_path = Path::new(self.local_path()).join(task_config_file(task_id));
+        if !config_path.exists() {
+            config_path = Path::new(self.local_path()).join("config.ini");
+        }
+        if !config_path.exists() {
+            return Err("不存在配置文件".to_string());
+        }
+        let mut raw_config = IndexMap::new();
+        let ini = Ini::load_from_file(config_path).map_err(|_| "配置文件解析失败!".to_string())?;
+        for (_section, prop) in ini.iter() {
+            for (k, v) in prop.iter() {
+                raw_config.insert(k.to_string(), v.to_string());
+            }
+        }
+
+        // 将配置文件内容转为指定格式的数据
+        let mut config_form: Vec<FormEntry> = Vec::new();
+        let mut id = 0;
+        for (key, value) in raw_config.iter() {
+            id += 1;
+            // 找项目配置中是否有对应app 表单配置
+            let mut app_store_config_prop: Option<&AppStoreConfigProp> = None;
+            if app_store_item.config.is_some() {
+                app_store_config_prop = app_store_item
+                    .config
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .find(|prop| prop.field_name == key.as_str());
+            }
+
+            // 格式转化
+            if app_store_config_prop.is_none() {
+                // 没有，则使用默认的表单(Text)
+                config_form.push(FormEntry {
+                    control_type: "Text".to_string(),
+                    id: id.to_string(),
+                    data: FormData {
+                        field_name: key.to_string(),
+                        label: key.to_string(),
+                        required: false,
+                        default: Some(value.to_string()),
+                        tip: None,
+                        placeholder: None,
+                        min: None,
+                        max: None,
+                        item_config: None,
+                    },
+                });
+            } else {
+                //
+                let prop = app_store_config_prop.unwrap();
+                let items = prop.option_items.clone().unwrap_or([].to_vec());
+                let items = items
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, item)| FormItems {
+                        id: idx.to_string() + "1",
+                        label: item.to_string(),
+                        value: item.to_string(),
+                    })
+                    .collect::<Vec<_>>();
+
+                config_form.push(FormEntry {
+                    control_type: prop.control_type.clone(),
+                    id: id.to_string(),
+                    data: FormData {
+                        field_name: key.to_string(),
+                        label: key.to_string(),
+                        required: prop.required.is_some_and(|x| x),
+                        tip: prop.tip.clone(),
+                        placeholder: prop.placeholder.clone(),
+                        min: prop.min.clone(),
+                        max: prop.max.clone(),
+                        default: Some(value.to_string()), // 非select组件才有效
+                        item_config: if is_selectd_componet(&prop.control_type) {
+                            // select 有效
+                            Some(FormItemConfig {
+                                value: value.to_string(),
+                                items,
+                            })
+                        } else {
+                            None
+                        },
+                    },
+                });
+            }
+        }
+        Ok(serde_json::to_string(&config_form)
+            .map_err(|_| "form struct转json str失败!".to_string())?)
     }
 }

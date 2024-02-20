@@ -183,7 +183,10 @@ onMounted(() => {
         :prop="control.data.fieldName"
       >
         <!-- 加入lable后面的提示信息 -->
-        <template v-if="control.data.tip != ''" #label>
+        <template
+          v-if="control.data.tip != '' && control.data.tip != null"
+          #label
+        >
           {{ control.data.label }}
           <el-tooltip
             class="item"

@@ -69,9 +69,19 @@ pub fn exists_project(url: &String) -> bool {
     std::path::Path::new(&local_path).exists()
 }
 
-/// 指定任务的日志文件路径
+/// 指定任务的日志文件名
 pub fn task_log_file(task_id: u32) -> String {
     format!(".Log_{task_id}.txt")
+}
+
+/// 指定任务的配置文件名
+pub fn task_config_file(task_id: u32) -> String {
+    format!("conf_{task_id}.ini")
+}
+
+/// 是否属于选择性的表单组件
+pub fn is_selectd_componet(componet: &String) -> bool {
+    ["Radio", "CheckBox", "Selected", "Selecteds"].contains(&componet.as_str())
 }
 
 pub fn db_session(error: Option<&str>) -> Result<Connection, String> {

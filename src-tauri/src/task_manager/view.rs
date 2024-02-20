@@ -156,11 +156,34 @@ pub fn get_job_log(id: u32) -> Result<JobLog, String> {
         content: log_content,
     })
 }
-// #[tauri::command]
-// pub fn getconfig_app(repo_url: String, app_form: String, task_id: u32) -> Result<String, String> {
-//     let svn_repo: SvnRepo = SvnRepo::new(repo_url);
-//     svn_repo.getconfig_app(app_form, task_id)
-// }
+
+/// 获取任务的配置
+#[tauri::command]
+pub fn get_job_config(id: u32) -> Result<String, String> {
+    // 从DB中找到Job
+    let error = "获取任务配置失败";
+    let conn = utils::db_session(Some(error))?;
+    let job = service::get_by_id(&conn, id)?;
+    if job.is_none() {
+        return Err(format!("{}, 该任务不存在", error));
+    }
+    // 从项目配置中找到对应app
+    let job = job.unwrap();
+    let app_config = utils::cached_app_store_config().map_err(|e| format!("{error}, {e}"))?;
+    let app_config_item = app_config
+        .app_list
+        .into_iter()
+        .find(|item| item.name == job.app_name);
+    if app_config_item.is_none() {
+        return Err(format!("{error}, 项目配置中不存在该应用!"));
+    }
+
+    // 获取任务的配置
+    let svn_repo = SvnRepo::new(job.url);
+    svn_repo
+        .get_config(app_config_item.unwrap(), id)
+        .map_err(|e| format!("{error}, {e}"))
+}
 
 // #[tauri::command]
 // pub fn setconfig_app(repo_url: String, config: String, task_id: u32) -> Result<(), String> {

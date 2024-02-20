@@ -224,7 +224,7 @@ export function useJob() {
   };
 
   // 设置任务的配置
-  function handleConfig(row) {
+  function handleConfig(row: JobItemProps) {
     getJobConfig(row.id)
       .then((response: string) => {
         taskConfigData.value = JSON.parse(response);
