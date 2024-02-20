@@ -223,7 +223,7 @@ export function useJob() {
       });
   };
 
-  // 设置任务的配置
+  // 查看当前任务的配置
   function handleConfig(row: JobItemProps) {
     getJobConfig(row.id)
       .then((response: string) => {
@@ -235,6 +235,7 @@ export function useJob() {
         message(error, { type: "error" });
       });
   }
+  // 保存当前任务的配置
   function handleConfirmConfig(formRef, config) {
     formRef.validate(async valid => {
       if (valid) {

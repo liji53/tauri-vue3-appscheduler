@@ -233,4 +233,35 @@ pub trait RepoCommand {
         Ok(serde_json::to_string(&config_form)
             .map_err(|_| "form struct转json str失败!".to_string())?)
     }
+
+    /// 保存配置
+    /// todo: 同get_config
+    fn set_config(&self, config_in: serde_json::Value, task_id: u32) -> Result<(), String> {
+        let config_in = config_in.as_object().unwrap();
+        let task_config_path = Path::new(self.local_path()).join(task_config_file(task_id));
+        let mut config_path = task_config_path.clone();
+        if !config_path.exists() {
+            config_path = Path::new(self.local_path()).join("config.ini");
+        }
+
+        // 更新数据
+        let cur_config =
+            Ini::load_from_file(config_path).map_err(|e| format!("文件解析失败: {e}"))?;
+        let mut new_config = Ini::new();
+        for (section, prop) in cur_config.iter() {
+            for (k, v) in prop.iter() {
+                if config_in.contains_key(k) {
+                    new_config
+                        .with_section(Some(section.unwrap()))
+                        .set(k, config_in[k].as_str().unwrap_or(""));
+                } else {
+                    new_config.with_section(Some(section.unwrap())).set(k, v);
+                }
+            }
+        }
+        // 写入当前任务的配置文件
+        new_config
+            .write_to_file(task_config_path)
+            .map_err(|e| format!("文件保存失败：{e}"))
+    }
 }

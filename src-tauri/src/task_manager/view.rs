@@ -2,6 +2,7 @@ use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobUpdate}
 use super::service;
 use crate::utils;
 use crate::utils::{base_app::RepoCommand, svn_app::SvnRepo};
+use serde_json::Value;
 use std::{fs, path::Path};
 use tauri::Window;
 
@@ -53,7 +54,7 @@ pub fn get_jobs(
 pub fn create_job(data: String) -> Result<(), String> {
     let error = "创建任务失败";
     let job_in: JobCreate =
-        serde_json::from_str(&data).map_err(|_| format!("{}, 参数转json失败", error))?;
+        serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
 
     // 读取远程仓库中的配置文件, 并找到对应的配置项
     let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
@@ -97,12 +98,11 @@ pub fn delete_job(id: u32) -> Result<(), String> {
 }
 
 /// 更新任务(包括 状态、cron)
-/// todo: 更新存在相同的task name，报错需要完善
 #[tauri::command]
 pub fn update_job(id: u32, data: String) -> Result<(), String> {
     let error = "更新任务失败";
     let job_in: JobUpdate =
-        serde_json::from_str(&data).map_err(|_| format!("{}, 参数转json失败", error))?;
+        serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
     // println!("{:?}", job_in);
     let conn = utils::db_session(Some(error))?;
     service::update(&conn, id, &job_in).map_err(|e| format!("{}, {}", error, e))
@@ -185,8 +185,22 @@ pub fn get_job_config(id: u32) -> Result<String, String> {
         .map_err(|e| format!("{error}, {e}"))
 }
 
-// #[tauri::command]
-// pub fn setconfig_app(repo_url: String, config: String, task_id: u32) -> Result<(), String> {
-//     let svn_repo: SvnRepo = SvnRepo::new(repo_url);
-//     svn_repo.setconfig_app(config, task_id)
-// }
+/// 设置任务的配置
+#[tauri::command]
+pub fn set_job_config(id: u32, data: String) -> Result<(), String> {
+    let error = "保存配置失败";        
+    let job_config_in: Value =
+        serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;    
+
+    // 从DB中找到Job
+    let conn = utils::db_session(Some(error))?;
+    let job = service::get_by_id(&conn, id)?;
+    if job.is_none() {
+        return Err(format!("{}, 该任务不存在", error));
+    }
+
+    let svn_repo: SvnRepo = SvnRepo::new(job.unwrap().url);
+    svn_repo
+        .set_config(job_config_in, id)
+        .map_err(|e| format!("{error}, {e}"))
+}

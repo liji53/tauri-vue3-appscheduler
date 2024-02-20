@@ -11,7 +11,8 @@ use app_manager::view::{
 use rusqlite::Connection;
 use sys_resource::get_sys_info;
 use task_manager::view::{
-    create_job, delete_job, get_job_config, get_job_log, get_jobs, run_job, update_job,
+    create_job, delete_job, get_job_config, get_job_log, get_jobs, run_job, set_job_config,
+    update_job,
 };
 
 fn main() {
@@ -51,7 +52,8 @@ fn main() {
             update_job,
             run_job,
             get_job_log,
-            get_job_config
+            get_job_config,
+            set_job_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
