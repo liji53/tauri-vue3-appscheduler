@@ -3,6 +3,12 @@ use super::database::db_session;
 use super::svn_app::SvnRepo;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
+static mut SCHEDULER: Option<JobScheduler> = None;
+
+fn get_sched() -> &'static JobScheduler {
+    unsafe { SCHEDULER.as_ref().unwrap() }
+}
+
 /// 启动定时任务
 pub async fn init_scheduler() -> Result<(), String> {
     // 创建scheduler
@@ -10,11 +16,15 @@ pub async fn init_scheduler() -> Result<(), String> {
         .await
         .map_err(|e| format!("JobScheduler创建失败：{e}"))?;
 
+    unsafe {
+        SCHEDULER = Some(sched);
+    }
+
     let conn = db_session(Some("启动scheduler失败"));
     if let Err(e) = conn {
         println!("{e}");
         // 启动scheduler
-        return sched
+        return get_sched()
             .start()
             .await
             .map_err(|e| format!("JobScheduler启动失败: {e}"));
@@ -22,7 +32,15 @@ pub async fn init_scheduler() -> Result<(), String> {
     // 查询设置了定时且状态为True的任务
     let conn = conn.unwrap();
     let sql_stmt = "SELECT id, cron, url, name FROM task WHERE status = 1 AND cron != ''";
-    let mut stmt = conn.prepare(sql_stmt).unwrap();
+    let stmt = conn.prepare(sql_stmt);
+    if let Err(e) = stmt {
+        println!("{e}");
+        return get_sched()
+            .start()
+            .await
+            .map_err(|e| format!("JobScheduler启动失败: {e}"));
+    }
+    let mut stmt = stmt.unwrap();
     let job_iter = stmt
         .query_map([], |row| {
             let row_tuple: (u32, String, String, String) =
@@ -44,14 +62,14 @@ pub async fn init_scheduler() -> Result<(), String> {
             }
         })
         .map_err(|e| format!("Job::new创建失败：{e}"))?;
-        sched
+        get_sched()
             .add(task)
             .await
             .map_err(|e| format!("JobScheduler添加任务失败: {e}"))?;
     }
 
     // 启动scheduler
-    sched
+    get_sched()
         .start()
         .await
         .map_err(|e| format!("JobScheduler启动失败: {e}"))
