@@ -229,13 +229,14 @@ const {
       direction="rtl"
       :destroy-on-close="true"
       title="任务定时"
-      size="800px"
+      size="850px"
     >
       <div class="pr-20">
         <cron-element-plus
           v-model="cronFormData.cron"
           :button-props="{ type: 'primary' }"
           locale="zh-cn"
+          format="quartz"
         />
         <br />
         <el-form

@@ -25,8 +25,7 @@ pub fn get_jobs(
         .map(|job| {
             let mut next_at = None;
             // cron 库不支持5位的cron表达式
-            if let Ok(schedule) = cron::Schedule::from_str(&("0 ".to_string() + job.cron.as_str()))
-            {
+            if let Ok(schedule) = cron::Schedule::from_str(&job.cron) {
                 next_at = Some(
                     schedule
                         .upcoming(Local)
