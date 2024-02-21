@@ -14,8 +14,14 @@ use task_manager::view::{
     create_job, delete_job, get_job_config, get_job_log, get_jobs, run_job, set_job_config,
     update_job,
 };
+use utils::scheduler;
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if let Err(e) = scheduler::init_scheduler().await {
+        println!("{e}");
+    }
+
     tauri::Builder::default()
         .setup(|_| {
             // 建表
@@ -57,4 +63,5 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+    Ok(())
 }

@@ -1,4 +1,6 @@
 pub mod base_app;
+pub mod database;
+pub mod scheduler;
 pub mod schemas;
 pub mod svn_app;
 
@@ -6,7 +8,7 @@ use self::base_app::RepoCommand;
 use self::schemas::AppStoreConfig;
 use self::svn_app::SvnRepo;
 use cached::proc_macro::{cached, once};
-use rusqlite::{Connection, Result};
+
 use sha1::{Digest, Sha1};
 use std::{fs, path::PathBuf};
 
@@ -82,13 +84,4 @@ pub fn task_config_file(task_id: u32) -> String {
 /// 是否属于选择性的表单组件
 pub fn is_selectd_componet(componet: &String) -> bool {
     ["Radio", "CheckBox", "Selected", "Selecteds"].contains(&componet.as_str())
-}
-
-pub fn db_session(error: Option<&str>) -> Result<Connection, String> {
-    match error {
-        Some(error) => {
-            Connection::open(program_db_path()).map_err(|_| format!("{}, 数据库链接异常", error))
-        }
-        None => Connection::open(program_db_path()).map_err(|_| "数据库链接异常".to_string()),
-    }
 }

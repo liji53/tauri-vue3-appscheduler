@@ -1,14 +1,14 @@
 use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobUpdate};
 use super::service;
 use crate::utils;
-use crate::utils::{base_app::RepoCommand, svn_app::SvnRepo};
+use crate::utils::{base_app::RepoCommand, database::db_session, svn_app::SvnRepo};
 use chrono::Local;
 use serde_json::Value;
 use std::str::FromStr;
 use std::{fs, path::Path};
 use tauri::Window;
 
-// todo: next_at 的实现
+/// 获取任务列表
 #[tauri::command]
 pub fn get_jobs(
     name: String,
@@ -18,7 +18,7 @@ pub fn get_jobs(
 ) -> Result<JobPagination, String> {
     let error = "获取任务列表失败";
     // 查询数据库，获取所有的任务列表
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
     let jobs = service::get_all(&conn).map_err(|e| format!("{}, {}", error, e))?;
     let jobs: Vec<Job> = jobs
         .into_iter()
@@ -80,7 +80,7 @@ pub fn create_job(data: String) -> Result<(), String> {
         .find(|item| item.name == job_in.app_name)
     {
         // db创建job
-        let conn = utils::db_session(Some(error))?;
+        let conn = db_session(Some(error))?;
         let job = service::get_by_name(&conn, &job_in.name).map_err(|e| format!("{error}, {e}"))?;
         match job {
             None => service::create(
@@ -108,7 +108,7 @@ pub fn create_job(data: String) -> Result<(), String> {
 #[tauri::command]
 pub fn delete_job(id: u32) -> Result<(), String> {
     let error = "删除任务失败";
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
 
     service::delete(&conn, id).map_err(|e| format!("{}, {}", error, e))
 }
@@ -120,7 +120,7 @@ pub fn update_job(id: u32, data: String) -> Result<(), String> {
     let job_in: JobUpdate =
         serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
     // println!("{:?}", job_in);
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
     service::update(&conn, id, &job_in).map_err(|e| format!("{}, {}", error, e))
 }
 
@@ -128,7 +128,7 @@ pub fn update_job(id: u32, data: String) -> Result<(), String> {
 #[tauri::command]
 pub fn run_job(window: Window, id: u32) -> Result<(), String> {
     let error = "执行任务失败";
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
     let job = service::get_by_id(&conn, id)?;
     if job.is_none() {
         return Err(format!("{}, 该任务不存在", error));
@@ -138,7 +138,7 @@ pub fn run_job(window: Window, id: u32) -> Result<(), String> {
     let job = job.unwrap();
     let svn_repo = SvnRepo::new(job.url);
     svn_repo
-        .run_app(window, job.name, job.id.unwrap())
+        .run_app(Some(window), job.name, job.id.unwrap())
         .map_err(|e| format!("{}, {}", error, e))
 }
 
@@ -146,7 +146,7 @@ pub fn run_job(window: Window, id: u32) -> Result<(), String> {
 #[tauri::command]
 pub fn get_job_log(id: u32) -> Result<JobLog, String> {
     let error = "获取日志失败";
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
     let job = service::get_by_id(&conn, id)?;
     if job.is_none() {
         return Err(format!("{}, 该任务不存在", error));
@@ -178,7 +178,7 @@ pub fn get_job_log(id: u32) -> Result<JobLog, String> {
 pub fn get_job_config(id: u32) -> Result<String, String> {
     // 从DB中找到Job
     let error = "获取任务配置失败";
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
     let job = service::get_by_id(&conn, id)?;
     if job.is_none() {
         return Err(format!("{}, 该任务不存在", error));
@@ -209,7 +209,7 @@ pub fn set_job_config(id: u32, data: String) -> Result<(), String> {
         serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
 
     // 从DB中找到Job
-    let conn = utils::db_session(Some(error))?;
+    let conn = db_session(Some(error))?;
     let job = service::get_by_id(&conn, id)?;
     if job.is_none() {
         return Err(format!("{}, 该任务不存在", error));

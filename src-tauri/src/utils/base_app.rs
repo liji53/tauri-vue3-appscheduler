@@ -66,8 +66,13 @@ pub trait RepoCommand {
     }
 
     /// 执行应用程序，python main.py
-    /// todo: 指定配置参数
-    fn run_app(&self, window: Window, task_name: String, task_id: u32) -> Result<(), String> {
+    /// todo: 指定配置参数，任务执行结果记入到数据库中
+    fn run_app(
+        &self,
+        window: Option<Window>,
+        task_name: String,
+        task_id: u32,
+    ) -> Result<(), String> {
         let repo_path = self.local_path().clone();
         let path = Path::new(&repo_path).join("main.py");
         if !path.exists() {
@@ -108,9 +113,10 @@ pub trait RepoCommand {
             }
 
             // 通知js，任务执行的结果
-            let now: DateTime<Local> = Local::now();
-            let formatted_time = now.format("%m-%d %H:%M:%S").to_string();
-            window
+            if let Some(window) = window {
+                let now: DateTime<Local> = Local::now();
+                let formatted_time = now.format("%m-%d %H:%M:%S").to_string();
+                window
                 .emit(
                     "run_app_result",
                     Notice{
@@ -127,6 +133,7 @@ pub trait RepoCommand {
                         }
                 )
                 .unwrap();
+            }
 
             // 记入日志
             if let Ok(mut fd) = fs::File::create(Path::new(&repo_path).join(task_log_file(task_id)))
