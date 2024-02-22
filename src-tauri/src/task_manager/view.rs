@@ -1,7 +1,7 @@
 use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobUpdate};
 use super::service;
 use crate::utils;
-use crate::utils::{base_app::RepoCommand, database::db_session, svn_app::SvnRepo};
+use crate::utils::{base_app::RepoCommand, database::db_session, scheduler, svn_app::SvnRepo};
 use chrono::Local;
 use serde_json::Value;
 use std::str::FromStr;
@@ -106,22 +106,39 @@ pub fn create_job(data: String) -> Result<(), String> {
 
 /// 删除任务
 #[tauri::command]
-pub fn delete_job(id: u32) -> Result<(), String> {
+pub async fn delete_job(id: u32) -> Result<(), String> {
     let error = "删除任务失败";
     let conn = db_session(Some(error))?;
 
-    service::delete(&conn, id).map_err(|e| format!("{}, {}", error, e))
+    service::delete(&conn, id).map_err(|e| format!("{}, {}", error, e))?;
+    scheduler::remove_job(id).await
 }
 
 /// 更新任务(包括 状态、cron)
 #[tauri::command]
-pub fn update_job(id: u32, data: String) -> Result<(), String> {
+pub async fn update_job(id: u32, data: String) -> Result<(), String> {
     let error = "更新任务失败";
     let job_in: JobUpdate =
         serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
     // println!("{:?}", job_in);
     let conn = db_session(Some(error))?;
-    service::update(&conn, id, &job_in).map_err(|e| format!("{}, {}", error, e))
+    service::update(&conn, id, &job_in).map_err(|e| format!("{}, {}", error, e))?;
+    if job_in.cron.is_some() {
+        let job = service::get_by_id(&conn, id).unwrap().unwrap();
+        if job.status {
+            return scheduler::modify_job(id, job.cron.clone(), job.url.clone(), job.name.clone())
+                .await;
+        }
+    } else if job_in.status.is_some() {
+        let job = service::get_by_id(&conn, id).unwrap().unwrap();
+        if job.status {
+            return scheduler::add_job(id, job.cron.clone(), job.url.clone(), job.name.clone())
+                .await;
+        } else {
+            return scheduler::remove_job(id).await;
+        }
+    }
+    Ok(())
 }
 
 /// 异步手动执行任务， 执行完成之后会主动通知客户端
