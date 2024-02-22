@@ -8,7 +8,6 @@ use indexmap::IndexMap;
 use ini::Ini;
 use std::io::Write;
 use std::path::Path;
-use std::process::Command;
 use std::{env, fs, thread};
 use tauri::Window;
 
@@ -48,12 +47,9 @@ pub trait RepoCommand {
             eprintln!("requirements.txt文件不存在");
             return Ok(());
         }
-        let output = Command::new("pip")
-            .arg("install")
-            .arg("-r")
-            .arg(format!("{}", requirement_path.to_string_lossy()))
-            .output()
-            .map_err(|e| format!("执行pip install失败: {}", e))?;
+        let requirement_path = requirement_path.to_string_lossy().to_string();
+
+        let output = super::command_warp(vec!["pip", "install", "-r", &requirement_path])?;
         if output.status.success() {
             Ok(())
         } else {
@@ -86,10 +82,7 @@ pub trait RepoCommand {
         thread::spawn(move || {
             // 起一个进程执行 python main.py
             let _ = env::set_current_dir(&repo_path);
-            let output = Command::new("python")
-                .arg("main.py")
-                .output()
-                .map_err(|e| format!("执行python main.py报错: {}", e));
+            let output = super::command_warp(vec!["python", "main.py"]);
 
             // 解析任务执行的结果
             let mut success = false;

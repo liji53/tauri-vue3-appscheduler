@@ -1,6 +1,5 @@
 use super::base_app::RepoCommand;
 use super::url_to_local_path;
-use std::process::Command;
 
 pub struct SvnRepo {
     url: String,        // 远程仓库地址
@@ -22,13 +21,13 @@ impl RepoCommand for SvnRepo {
     }
 
     fn remote_cat(url: &str) -> Result<String, String> {
-        let output = Command::new("svn")
-            .arg("cat")
-            .arg(url)
-            .arg("--non-interactive")
-            .arg("--trust-server-cert")
-            .output()
-            .map_err(|e| format!("原因：{}", e))?;
+        let output = super::command_warp(vec![
+            "svn",
+            "cat",
+            url,
+            "--non-interactive",
+            "--trust-server-cert",
+        ])?;
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).to_string())
         } else {
@@ -39,13 +38,14 @@ impl RepoCommand for SvnRepo {
     }
 
     fn update(&self) -> Result<(), String> {
-        let output = Command::new("svn")
-            .arg("update")
-            .arg(&self.local_path)
-            .arg("--non-interactive")
-            .arg("--trust-server-cert")
-            .output()
-            .map_err(|e| format!("原因：{}", e))?;
+        let output = super::command_warp(vec![
+            "svn",
+            "update",
+            &self.local_path,
+            "--non-interactive",
+            "--trust-server-cert",
+        ])?;
+
         if output.status.success() {
             Ok(())
         } else {
@@ -57,14 +57,15 @@ impl RepoCommand for SvnRepo {
 
     fn checkout(&self) -> Result<(), String> {
         /* 默认使用本地svn的账号 */
-        let output = Command::new("svn")
-            .arg("checkout")
-            .arg(&self.url)
-            .arg(&self.local_path)
-            .arg("--non-interactive")
-            .arg("--trust-server-cert")
-            .output()
-            .map_err(|e| format!("原因: {}", e))?;
+        let output = super::command_warp(vec![
+            "svn",
+            "checkout",
+            &self.url,
+            &self.local_path,
+            "--non-interactive",
+            "--trust-server-cert",
+        ])?;
+
         if output.status.success() {
             Ok(())
         } else {

@@ -10,6 +10,8 @@ use self::svn_app::SvnRepo;
 use cached::proc_macro::{cached, once};
 
 use sha1::{Digest, Sha1};
+use std::os::windows::process::CommandExt;
+use std::process::{Command, Output};
 use std::{fs, path::PathBuf};
 
 const CONFIG_URL: &str = "https://192.168.57.30/secu/dep1/UftdbSett/trunk/Documents/D5.Others/产品质量提升工具脚本/S6_项目辅助类工具/config.json";
@@ -84,4 +86,14 @@ pub fn task_config_file(task_id: u32) -> String {
 /// 是否属于选择性的表单组件
 pub fn is_selectd_componet(componet: &String) -> bool {
     ["Radio", "CheckBox", "Selected", "Selecteds"].contains(&componet.as_str())
+}
+
+/// 执行cmd命令
+pub fn command_warp(args: Vec<&str>) -> Result<Output, String> {
+    let commnd_args = args.iter().skip(1).collect::<Vec<_>>();
+    Command::new(args[0])
+        .creation_flags(0x08000000) // 执行时不会出现窗口
+        .args(commnd_args)
+        .output()
+        .map_err(|e| format!("{}执行异常：{}", args[0], e))
 }
