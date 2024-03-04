@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { open } from "@tauri-apps/api/dialog";
 import infoFilled from "@iconify-icons/ep/info-filled";
+import fileAdd from "@iconify-icons/ep/document-add";
+import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+
 import {
   ElInput,
   ElSwitch,
@@ -12,6 +16,7 @@ import {
   ElSlider,
   ElSelect
 } from "element-plus";
+import { hasOwnProp } from "@pureadmin/utils";
 
 type ControlType =
   | "Text"
@@ -24,7 +29,11 @@ type ControlType =
   | "InputNumber"
   | "Slider"
   | "Selected"
-  | "Selecteds";
+  | "Selecteds"
+  | "Dir"
+  | "Dirs"
+  | "File"
+  | "Files";
 
 interface ControlData {
   default?: any;
@@ -61,7 +70,11 @@ function getComponentType(controlType: ControlType): any {
     InputNumber: ElInputNumber,
     Slider: ElSlider,
     Selected: ElSelect,
-    Selecteds: ElSelect
+    Selecteds: ElSelect,
+    Dir: "",
+    Dirs: "",
+    File: "",
+    Files: ""
   };
   return componentMap[controlType];
 }
@@ -91,7 +104,11 @@ function getInputType(controlType: ControlType): string {
     InputNumber: "number",
     Slider: "range",
     Selected: "",
-    Selecteds: ""
+    Selecteds: "",
+    Dir: "",
+    Dirs: "",
+    File: "",
+    Files: ""
   };
   return inputTypeMap[controlType];
 }
@@ -150,6 +167,41 @@ const is_select_componet = (controlType: ControlType) => {
   return ["Radio", "CheckBox", "Selected", "Selecteds"].includes(controlType);
 };
 
+const select_path = async (
+  control_type: string,
+  field_name: string,
+  extensions: any[]
+) => {
+  let multiple = false;
+  if (control_type === "Dirs" || control_type === "Files") {
+    multiple = true;
+  }
+
+  let selected;
+  if (control_type === "Dir" || control_type === "Dirs") {
+    selected = await open({
+      directory: true,
+      multiple: multiple
+    });
+  } else {
+    const file_extensions = extensions.map(item => item.value);
+    selected = await open({
+      multiple: multiple,
+      filters: [
+        {
+          name: "文件类型",
+          extensions: file_extensions
+        }
+      ]
+    });
+  }
+  if (multiple) {
+    formData.value[field_name] = JSON.stringify(selected);
+  } else {
+    formData.value[field_name] = selected;
+  }
+};
+
 onMounted(() => {
   props.formJson.forEach(control => {
     /// 表单的默认值
@@ -198,8 +250,30 @@ onMounted(() => {
           </el-tooltip>
         </template>
 
+        <el-row
+          v-if="['Dir', 'Dirs', 'File', 'Files'].includes(control.ControlType)"
+        >
+          <el-col :span="20">
+            <el-input v-model="formData[control.data.fieldName]" />
+          </el-col>
+          <el-col :span="4">
+            <el-button
+              type="primary"
+              :icon="useRenderIcon(fileAdd)"
+              @click="
+                select_path(
+                  control.ControlType,
+                  control.data.fieldName,
+                  hasOwnProp(control.data.itemConfig, 'items')
+                    ? control.data.itemConfig.items
+                    : []
+                )
+              "
+            />
+          </el-col>
+        </el-row>
         <component
-          v-if="control.ControlType != 'Date'"
+          v-else-if="control.ControlType != 'Date'"
           :is="getComponentType(control.ControlType)"
           v-model="formData[control.data.fieldName]"
           v-bind="getComponentProps(control)"

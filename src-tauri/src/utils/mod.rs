@@ -85,7 +85,7 @@ pub fn task_config_file(task_id: u32) -> String {
 
 /// 是否属于选择性的表单组件
 pub fn is_selectd_componet(componet: &String) -> bool {
-    ["Radio", "CheckBox", "Selected", "Selecteds"].contains(&componet.as_str())
+    ["Radio", "CheckBox", "Selected", "Selecteds", "Files", "File"].contains(&componet.as_str())
 }
 
 /// 执行cmd命令
