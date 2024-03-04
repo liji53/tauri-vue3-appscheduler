@@ -18,7 +18,17 @@
         "message": true, 
         "open": true, 
         "save": true 
-      }
+      },      
+      "fs": {        
+        "scope": ["$LOCALDATA/*", "$LOCALDATA/appscheduler/*"],  
+        "readFile": true,
+        "writeFile": true,
+        "createDir": true,
+        "exists": true
+      },    
+      "path": {
+        "all": true
+      }      
     },
     "bundle": {
       "active": true,
