@@ -119,7 +119,7 @@ fn generate_update_sql_and_params(job_update: &JobUpdate) -> Option<(String, Vec
         index += 1;
     }
     if let Some(ref app_name) = job_update.app_name {
-        if let Ok(app_config) = utils::cached_app_store_config() {
+        if let Ok(app_config) = utils::get_app_store_config() {
             if let Some(app_store_item) = app_config
                 .app_list
                 .iter()

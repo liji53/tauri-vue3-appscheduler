@@ -15,10 +15,13 @@ import { join, localDataDir } from "@tauri-apps/api/path";
 /** 应用配置 */
 export const getConfig = async () => {
   const localDataPath = await localDataDir();
-  const path = await join(localDataPath, "appscheduler");
-  const config_file = await join(path, "config.json");
-  const contents = await readTextFile(config_file);
-  return JSON.parse(contents);
+  const config_file = await join(localDataPath, "appscheduler", "config.json");
+  if (await exists(config_file)) {
+    const contents = await readTextFile(config_file);
+    return JSON.parse(contents);
+  } else {
+    return { apps_url: "", app_user: "", app_passwd: "" };
+  }
 };
 
 export const setConfig = async (params: object) => {

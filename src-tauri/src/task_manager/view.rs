@@ -73,7 +73,7 @@ pub fn create_job(data: String) -> Result<(), String> {
         serde_json::from_str(&data).map_err(|_| format!("{}, 客户端参数异常", error))?;
 
     // 读取远程仓库中的配置文件, 并找到对应的配置项
-    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
+    let app_config = utils::get_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
     if let Some(app_store_item) = app_config
         .app_list
         .iter()
@@ -202,7 +202,7 @@ pub fn get_job_config(id: u32) -> Result<String, String> {
     }
     // 从项目配置中找到对应app
     let job = job.unwrap();
-    let app_config = utils::cached_app_store_config().map_err(|e| format!("{error}, {e}"))?;
+    let app_config = utils::get_app_store_config().map_err(|e| format!("{error}, {e}"))?;
     let app_config_item = app_config
         .app_list
         .into_iter()

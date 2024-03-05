@@ -79,3 +79,11 @@ pub struct Notice {
     pub name: String,
     pub list: Vec<NoticeItem>,
 }
+
+/// 本程序的配置文件
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct ProgramConfig {
+    pub apps_url: String,
+    pub app_user: String,
+    pub app_passwd: String,
+}

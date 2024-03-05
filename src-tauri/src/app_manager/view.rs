@@ -13,7 +13,7 @@ const UNINSTALLED: &str = "未安装";
 pub fn get_app_categories() -> Result<Vec<String>, String> {
     let error = "获取应用分类失败";
     // 读取远程仓库中的配置文件
-    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
+    let app_config = utils::get_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
 
     // 获取应用的分类
     let mut categories = HashSet::new();
@@ -37,7 +37,7 @@ pub fn get_apps(
     items_per_page: u32,
 ) -> Result<AppPagination, String> {
     let error = "获取应用列表失败";
-    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
+    let app_config = utils::get_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
 
     // 基于入参过滤
     let app_store_list: Vec<AppStoreItem> = app_config
@@ -126,9 +126,9 @@ pub fn readme_app(repo_url: String) -> Result<String, String> {
 /// 基于分类-应用的层次，返回前端el-select-tree要求的树形结构(应用管理中用到)
 #[tauri::command]
 pub fn get_app_tree() -> Result<Vec<AppTree>, String> {
-    let error = "获取应用分类树失败";
+    let error = "获取应用分类失败";
     // 读取远程仓库中的配置文件
-    let app_config = utils::cached_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
+    let app_config = utils::get_app_store_config().map_err(|e| format!("{}, {}", error, e))?;
     // 获取已经安装的应用，format：{应用分类: [安装的应用名]}
     let mut app_categories = HashMap::new();
     for item in app_config.app_list.into_iter() {
