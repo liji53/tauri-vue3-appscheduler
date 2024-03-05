@@ -6,6 +6,7 @@ pub mod schemas;
 pub mod svn_app;
 
 use self::base_app::RepoCommand;
+use self::git_app::GitRepo;
 use self::schemas::{AppStoreConfig, ProgramConfig};
 use self::svn_app::SvnRepo;
 use cached::proc_macro::cached;
@@ -27,15 +28,17 @@ pub fn get_app_store_config() -> Result<AppStoreConfig, String> {
 // 缓存应用配置项
 #[cached(time = 60, sync_writes = true)]
 fn cached_app_store_config(url: String) -> Result<AppStoreConfig, String> {
+    let app_store_config;
     if !url.ends_with(".git") {
         let repo = SvnRepo::new(url);
-        let app_store_config = repo.remote_cat(None)?;
-        let ret: AppStoreConfig =
-            serde_json::from_str(&app_store_config).map_err(|_| "配置文件json格式异常!")?;
-        Ok(ret)
+        app_store_config = repo.remote_cat(None)?;
     } else {
-        Err("暂不支持git仓库!".to_string())
+        let repo = GitRepo::new(url);
+        app_store_config = repo.remote_cat(Some("apps.json"))?;
     }
+    let ret: AppStoreConfig =
+        serde_json::from_str(&app_store_config).map_err(|_| "配置文件json格式异常!")?;
+    Ok(ret)
 }
 
 /// 对Vec数据进行分页
