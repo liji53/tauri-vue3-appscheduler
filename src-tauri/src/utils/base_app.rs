@@ -22,7 +22,7 @@ pub trait RepoCommand {
     fn update(&self) -> Result<(), String>;
 
     // 读取远程仓库中指定文件的内容
-    fn remote_cat(url: &str) -> Result<String, String>;
+    fn remote_cat(&self, file_path: Option<&str>) -> Result<String, String>;
 
     /// 读取本地仓库中指定文件的内容
     fn cat(&self, file_name: &str) -> Result<String, String> {

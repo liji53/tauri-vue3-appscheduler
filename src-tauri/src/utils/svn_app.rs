@@ -20,11 +20,15 @@ impl RepoCommand for SvnRepo {
         &self.local_path
     }
 
-    fn remote_cat(url: &str) -> Result<String, String> {
+    fn remote_cat(&self, file_path: Option<&str>) -> Result<String, String> {
+        let file_uri = match file_path {
+            Some(file) => format!("{}/{}", self.url, file),
+            None => self.url.clone(),
+        };
         let output = super::command_warp(vec![
             "svn",
             "cat",
-            url,
+            &file_uri,
             "--non-interactive",
             "--trust-server-cert",
         ])?;

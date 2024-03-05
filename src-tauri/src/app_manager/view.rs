@@ -1,8 +1,7 @@
 use super::schemas::{App, AppPagination, AppTree, AppTreeChildren};
+use super::utils::{exists_app, get_repo};
 use crate::utils;
-use crate::utils::base_app::RepoCommand;
 use crate::utils::schemas::AppStoreItem;
-use crate::utils::svn_app::SvnRepo;
 use std::collections::{HashMap, HashSet};
 
 const INSTALLED: &str = "已安装";
@@ -48,7 +47,7 @@ pub fn get_apps(
                 && (app_name.is_empty() || item.name.contains(&app_name))
                 && (category.is_empty() || item.category == category)
                 && (status.is_empty()
-                    || (utils::exists_project(&item.url)
+                    || (exists_app(&item.url)
                         == (if status == INSTALLED { true } else { false })))
         })
         .collect();
@@ -58,7 +57,7 @@ pub fn get_apps(
         .into_iter()
         .map(|i| App {
             name: i.name,
-            status: if utils::exists_project(&i.url) {
+            status: if exists_app(&i.url) {
                 String::from(INSTALLED)
             } else {
                 String::from(UNINSTALLED)
@@ -78,48 +77,38 @@ pub fn get_apps(
 /// 安装应用，下载远程应用到本地
 #[tauri::command]
 pub fn install_app(repo_url: String) -> Result<(), String> {
-    if repo_url.ends_with(".git") {
-        return Err("不支持安装git应用".to_string());
-    }
-    let svn_repo = SvnRepo::new(repo_url);
-    svn_repo
-        .checkout()
+    let repo = get_repo(repo_url);
+    repo.checkout()
         .map_err(|e| format!("安装应用失败, {}", e))?;
-    svn_repo
-        .install_requirements()
+    repo.install_requirements()
         .map_err(|e| format!("安装应用成功, 但{}", e))
 }
 
 /// 卸载应用
 #[tauri::command]
 pub fn uninstall_app(repo_url: String) -> Result<(), String> {
-    let svn_repo = SvnRepo::new(repo_url);
-    svn_repo
-        .delete()
-        .map_err(|e| format!("卸载应用失败, {}", e))
+    let repo = get_repo(repo_url);
+    repo.delete().map_err(|e| format!("卸载应用失败, {}", e))
 }
 
 /// 升级应用
 #[tauri::command]
 pub fn ungrade_app(repo_url: String) -> Result<(), String> {
-    let svn_repo = SvnRepo::new(repo_url);
-    svn_repo
-        .update()
-        .map_err(|e| format!("升级应用失败, {}", e))
+    let repo = get_repo(repo_url);
+    repo.update().map_err(|e| format!("升级应用失败, {}", e))
 }
 
 /// 获取应用的详情(readme.md)
 #[tauri::command]
 pub fn readme_app(repo_url: String) -> Result<String, String> {
     let error = "获取详情失败";
-    if !utils::exists_project(&repo_url) {
-        let remote_file = format!("{}/{}", repo_url, "readme.md");
-        SvnRepo::remote_cat(&remote_file).map_err(|e| format!("{}, {}", error, e))
+    let repo = get_repo(repo_url.clone());
+
+    if !exists_app(&repo_url) {
+        repo.remote_cat(Some("readme.md"))
+            .map_err(|e| format!("{error}, {e}"))
     } else {
-        let svn_repo: SvnRepo = SvnRepo::new(repo_url.to_string());
-        svn_repo
-            .cat("readme.md")
-            .map_err(|e| format!("{}, {}", error, e))
+        repo.cat("readme.md").map_err(|e| format!("{error}, {e}"))
     }
 }
 
@@ -132,7 +121,7 @@ pub fn get_app_tree() -> Result<Vec<AppTree>, String> {
     // 获取已经安装的应用，format：{应用分类: [安装的应用名]}
     let mut app_categories = HashMap::new();
     for item in app_config.app_list.into_iter() {
-        if !utils::exists_project(&item.url) || item.online.is_some_and(|online| !online) {
+        if !exists_app(&item.url) || item.online.is_some_and(|online| !online) {
             // 应用没有安装,或者下线了
             continue;
         }

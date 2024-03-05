@@ -1,5 +1,6 @@
 pub mod base_app;
 pub mod database;
+pub mod git_app;
 pub mod scheduler;
 pub mod schemas;
 pub mod svn_app;
@@ -7,7 +8,7 @@ pub mod svn_app;
 use self::base_app::RepoCommand;
 use self::schemas::{AppStoreConfig, ProgramConfig};
 use self::svn_app::SvnRepo;
-use cached::proc_macro::{cached, once};
+use cached::proc_macro::cached;
 
 use sha1::{Digest, Sha1};
 use std::os::windows::process::CommandExt;
@@ -27,8 +28,10 @@ pub fn get_app_store_config() -> Result<AppStoreConfig, String> {
 #[cached(time = 60, sync_writes = true)]
 fn cached_app_store_config(url: String) -> Result<AppStoreConfig, String> {
     if !url.ends_with(".git") {
-        let ret: AppStoreConfig = serde_json::from_str(&SvnRepo::remote_cat(&url)?)
-            .map_err(|_| "配置文件json格式异常!")?;
+        let repo = SvnRepo::new(url);
+        let app_store_config = repo.remote_cat(None)?;
+        let ret: AppStoreConfig =
+            serde_json::from_str(&app_store_config).map_err(|_| "配置文件json格式异常!")?;
         Ok(ret)
     } else {
         Err("暂不支持git仓库!".to_string())
@@ -80,12 +83,6 @@ pub fn url_to_local_path(url: &String) -> String {
 
     let path = program_data_path().join(format!("{:x}", result));
     return path.to_string_lossy().to_string();
-}
-
-/// 检查本地是否已经存在指定URL的项目
-pub fn exists_project(url: &String) -> bool {
-    let local_path = url_to_local_path(url);
-    std::path::Path::new(&local_path).exists()
 }
 
 /// 指定任务的日志文件名
