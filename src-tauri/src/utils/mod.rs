@@ -97,7 +97,7 @@ pub fn task_log_file(task_id: u32) -> String {
 
 /// 指定任务的配置文件名
 pub fn task_config_file(task_id: u32) -> String {
-    format!("conf_{task_id}.ini")
+    format!("config_{task_id}.ini")
 }
 
 /// 是否属于选择性的表单组件
@@ -113,6 +113,7 @@ pub fn is_selectd_componet(componet: &String) -> bool {
     .contains(&componet.as_str())
 }
 
+/// 是否为多选组件
 pub fn is_multiple_selectd_componet(componet: &String) -> bool {
     ["CheckBox", "Selecteds"].contains(&componet.as_str())
 }

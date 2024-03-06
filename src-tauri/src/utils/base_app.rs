@@ -82,7 +82,12 @@ pub trait RepoCommand {
         thread::spawn(move || {
             // 起一个进程执行 python main.py
             let _ = env::set_current_dir(&repo_path);
-            let output = super::command_warp(vec!["python", "main.py"]);
+            let output = super::command_warp(vec![
+                "python",
+                "main.py",
+                "-f",
+                task_config_file(task_id).as_str(),
+            ]);
 
             // 解析任务执行的结果
             let mut success = false;
@@ -238,17 +243,14 @@ pub trait RepoCommand {
             }
         }
 
-        let ret = serde_json::to_string(&config_form)
-            .map_err(|_| "form struct转json str失败!".to_string())?;
-        println!("{ret}");
-        Ok(ret)
+        Ok(serde_json::to_string(&config_form)
+            .map_err(|_| "form struct转json str失败!".to_string())?)
     }
 
     /// 保存配置
     /// todo: 同get_config
     fn set_config(&self, config_in: serde_json::Value, task_id: u32) -> Result<(), String> {
         let config_in = config_in.as_object().unwrap();
-        println!("{:?}", config_in);
         let task_config_path = Path::new(self.local_path()).join(task_config_file(task_id));
         let mut config_path = task_config_path.clone();
         if !config_path.exists() {
