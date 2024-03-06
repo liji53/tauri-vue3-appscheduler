@@ -293,10 +293,9 @@ onMounted(() => {
               <el-checkbox
                 v-else-if="control.ControlType === 'CheckBox'"
                 :label="item.value"
+                :value="item.value"
                 :key="item.id + '1'"
-              >
-                {{ item.label }}
-              </el-checkbox>
+              />
               <el-radio
                 v-else-if="control.ControlType === 'Radio'"
                 :label="item.value"

@@ -1,8 +1,8 @@
 use super::schemas::{
-    AppStoreConfigProp, AppStoreItem, FormData, FormEntry, FormItemConfig, FormItems, Notice,
-    NoticeItem,
+    AppStoreConfigProp, AppStoreItem, FormData, FormEntry, FormItemConfig, FormItems, FormValue,
+    Notice, NoticeItem,
 };
-use super::{is_selectd_componet, task_config_file, task_log_file};
+use super::{is_multiple_selectd_componet, is_selectd_componet, task_config_file, task_log_file};
 use chrono::{DateTime, Local};
 use indexmap::IndexMap;
 use ini::Ini;
@@ -220,7 +220,14 @@ pub trait RepoCommand {
                         item_config: if is_selectd_componet(&prop.control_type) {
                             // select 有效
                             Some(FormItemConfig {
-                                value: value.to_string(),
+                                value: if is_multiple_selectd_componet(&prop.control_type) {
+                                    FormValue::Multiple(
+                                        serde_json::from_str::<Vec<String>>(value)
+                                            .unwrap_or([].to_vec()),
+                                    )
+                                } else {
+                                    FormValue::Single(value.to_string())
+                                },
                                 items,
                             })
                         } else {
@@ -230,14 +237,18 @@ pub trait RepoCommand {
                 });
             }
         }
-        Ok(serde_json::to_string(&config_form)
-            .map_err(|_| "form struct转json str失败!".to_string())?)
+
+        let ret = serde_json::to_string(&config_form)
+            .map_err(|_| "form struct转json str失败!".to_string())?;
+        println!("{ret}");
+        Ok(ret)
     }
 
     /// 保存配置
     /// todo: 同get_config
     fn set_config(&self, config_in: serde_json::Value, task_id: u32) -> Result<(), String> {
         let config_in = config_in.as_object().unwrap();
+        println!("{:?}", config_in);
         let task_config_path = Path::new(self.local_path()).join(task_config_file(task_id));
         let mut config_path = task_config_path.clone();
         if !config_path.exists() {
@@ -251,9 +262,16 @@ pub trait RepoCommand {
         for (section, prop) in cur_config.iter() {
             for (k, v) in prop.iter() {
                 if config_in.contains_key(k) {
+                    let value;
+                    if config_in[k].as_str().is_none() {
+                        value = serde_json::to_string(&config_in[k]).unwrap_or("".to_string());
+                    } else {
+                        value = config_in[k].as_str().unwrap().to_string();
+                    }
+
                     new_config
                         .with_section(Some(section.unwrap()))
-                        .set(k, config_in[k].as_str().unwrap_or(""));
+                        .set(k, value);
                 } else {
                     new_config.with_section(Some(section.unwrap())).set(k, v);
                 }

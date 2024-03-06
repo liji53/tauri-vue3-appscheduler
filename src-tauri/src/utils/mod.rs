@@ -36,6 +36,8 @@ fn cached_app_store_config(url: String) -> Result<AppStoreConfig, String> {
         let repo = GitRepo::new(url);
         app_store_config = repo.remote_cat(Some("apps.json"))?;
     }
+    // let app_store_config =
+    //     fs::read_to_string("F:\\Code\\my_project\\tauri-appscheduler-apps\\apps.json").unwrap();
     let ret: AppStoreConfig =
         serde_json::from_str(&app_store_config).map_err(|_| "配置文件json格式异常!")?;
     Ok(ret)
@@ -111,6 +113,9 @@ pub fn is_selectd_componet(componet: &String) -> bool {
     .contains(&componet.as_str())
 }
 
+pub fn is_multiple_selectd_componet(componet: &String) -> bool {
+    ["CheckBox", "Selecteds"].contains(&componet.as_str())
+}
 /// 执行cmd命令
 pub fn command_warp(args: Vec<&str>) -> Result<Output, String> {
     let commnd_args = args.iter().skip(1).collect::<Vec<_>>();

@@ -35,9 +35,15 @@ pub struct FormItems {
     pub value: String,
 }
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(untagged)]
+pub enum FormValue {
+    Single(String),
+    Multiple(Vec<String>),
+}
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct FormItemConfig {
     pub items: Vec<FormItems>, // 选项
-    pub value: String,         // 当前值
+    pub value: FormValue,      // 当前值
 }
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct FormData {
