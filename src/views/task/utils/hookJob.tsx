@@ -19,7 +19,7 @@ import { addDialog } from "@/components/ReDialog";
 import { type JobItemProps } from "./types";
 import { type PaginationProps } from "@pureadmin/table";
 import { reactive, ref, onMounted, h, computed, toRaw } from "vue";
-import { WebviewWindow } from "@tauri-apps/api/window";
+import { open } from "@tauri-apps/api/shell";
 
 const nextAtStyle = computed(() => {
   return (next_at: string) => {
@@ -363,10 +363,8 @@ export function useJob() {
   // 查询任务的执行结果
   function handleResult(row: JobItemProps) {
     getJobResult(row.id)
-      .then(response => {
-        new WebviewWindow("result", {
-          url: response.html_path
-        });
+      .then(async response => {
+        await open(response.html_path);
       })
       .catch(error => {
         message(error, { type: "error" });
