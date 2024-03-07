@@ -1,4 +1,4 @@
-use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobUpdate};
+use super::schemas::{Job, JobCreate, JobLog, JobModel, JobPagination, JobResult, JobUpdate};
 use super::service;
 use crate::utils;
 use crate::utils::{base_app::RepoCommand, database::db_session, scheduler, svn_app::SvnRepo};
@@ -236,4 +236,27 @@ pub fn set_job_config(id: u32, data: String) -> Result<(), String> {
     svn_repo
         .set_config(job_config_in, id)
         .map_err(|e| format!("{error}, {e}"))
+}
+
+/// 获取任务的执行结果
+#[tauri::command]
+pub fn get_job_result(id: u32) -> Result<JobResult, String> {
+    let error = "获取日志失败";
+    let conn = db_session(Some(error))?;
+    let job = service::get_by_id(&conn, id)?;
+    if job.is_none() {
+        return Err(format!("{}, 该任务不存在", error));
+    }
+    let job = job.unwrap();
+    let svn_repo = SvnRepo::new(job.url);
+    let html_path = format!(
+        "{}/{}.html",
+        svn_repo.local_path().clone().replace('\\', "/"),
+        id
+    );
+
+    Ok(JobResult {
+        created_at: "".to_string(),
+        html_path,
+    })
 }

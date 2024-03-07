@@ -28,7 +28,11 @@
       },    
       "path": {
         "all": true
-      }      
+      },
+      "window": {        
+        "create": true,
+        "setTitle": true
+      }
     },
     "bundle": {
       "active": true,

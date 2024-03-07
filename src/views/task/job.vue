@@ -15,7 +15,8 @@ import Clock from "@iconify-icons/ep/clock";
 import Setting from "@iconify-icons/ep/setting";
 import Delete from "@iconify-icons/ep/delete";
 import EditPen from "@iconify-icons/ep/edit-pen";
-import Document from "@iconify-icons/ep/document";
+import LogPic from "@iconify-icons/ep/document";
+import Document from "@iconify-icons/ep/link";
 
 defineOptions({
   name: "Job"
@@ -48,6 +49,7 @@ const {
   logVisible,
   log,
   handleLog,
+  handleResult,
   categories
 } = useJob();
 </script>
@@ -158,21 +160,13 @@ const {
                 circle
               />
             </el-tooltip>
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="定时"
-              placement="top"
-              :hide-after="10"
-            >
-              <el-button
-                type="success"
-                size="small"
-                :icon="useRenderIcon(Clock)"
-                @click="handleTimer(row)"
-                circle
-              />
-            </el-tooltip>
+            <el-button
+              type="success"
+              size="small"
+              :icon="useRenderIcon(Clock)"
+              @click="handleTimer(row)"
+              circle
+            />
             <el-tooltip
               class="box-item"
               effect="dark"
@@ -214,8 +208,23 @@ const {
               <el-button
                 type="primary"
                 size="small"
-                :icon="useRenderIcon(Document)"
+                :icon="useRenderIcon(LogPic)"
                 @click="handleLog(row)"
+                circle
+              />
+            </el-tooltip>
+            <el-tooltip
+              class="box-item"
+              effect="dark"
+              content="结果"
+              placement="top"
+              :hide-after="0"
+            >
+              <el-button
+                type="info"
+                size="small"
+                :icon="useRenderIcon(Document)"
+                @click="handleResult(row)"
                 circle
               />
             </el-tooltip>

@@ -10,7 +10,8 @@ import {
   getJobConfig,
   setJobConfig,
   type Log,
-  getJobLog
+  getJobLog,
+  getJobResult
 } from "@/api/job";
 import { getAppTree, type AppTreeResult } from "@/api/app";
 import { ElMessageBox } from "element-plus";
@@ -18,6 +19,7 @@ import { addDialog } from "@/components/ReDialog";
 import { type JobItemProps } from "./types";
 import { type PaginationProps } from "@pureadmin/table";
 import { reactive, ref, onMounted, h, computed, toRaw } from "vue";
+import { WebviewWindow } from "@tauri-apps/api/window";
 
 const nextAtStyle = computed(() => {
   return (next_at: string) => {
@@ -129,7 +131,7 @@ export function useJob() {
     {
       label: "操作",
       fixed: "right",
-      width: 240,
+      width: 270,
       slot: "operation"
     }
   ];
@@ -358,6 +360,18 @@ export function useJob() {
         message(error, { type: "error" });
       });
   }
+  // 查询任务的执行结果
+  function handleResult(row: JobItemProps) {
+    getJobResult(row.id)
+      .then(response => {
+        new WebviewWindow("result", {
+          url: response.html_path
+        });
+      })
+      .catch(error => {
+        message(error, { type: "error" });
+      });
+  }
 
   onMounted(() => {
     onSearch();
@@ -396,6 +410,7 @@ export function useJob() {
     logVisible,
     log,
     handleLog,
+    handleResult,
     categories
   };
 }

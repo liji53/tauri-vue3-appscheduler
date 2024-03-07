@@ -41,6 +41,12 @@ pub struct JobLog {
     pub content: String,
 }
 
+#[derive(serde::Serialize)]
+pub struct JobResult {
+    pub created_at: String, // 执行时间
+    pub html_path: String,
+}
+
 /// DB models
 #[derive(Debug)]
 pub struct JobModel {
