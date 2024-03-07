@@ -87,6 +87,7 @@ dependencies = [
  "cached",
  "chrono",
  "cron",
+ "encoding_rs",
  "git2",
  "indexmap 2.2.3",
  "rusqlite",

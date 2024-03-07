@@ -4,6 +4,7 @@ use super::schemas::{
 };
 use super::{is_multiple_selectd_componet, is_selectd_componet, task_config_file, task_log_file};
 use chrono::{DateTime, Local};
+use encoding_rs::GBK;
 use indexmap::IndexMap;
 use ini::Ini;
 use std::io::Write;
@@ -98,10 +99,12 @@ pub trait RepoCommand {
                     if ret.status.success() {
                         success = true;
                         description = "任务执行成功".to_string();
-                        log_content = String::from_utf8_lossy(&ret.stdout).to_string();
+                        let (result, _, _) = GBK.decode(&ret.stdout);
+                        log_content = result.to_string();
                     } else {
                         description = "任务脚本执行报错".to_string();
-                        log_content = String::from_utf8_lossy(&ret.stderr).to_string();
+                        let (result, _, _) = GBK.decode(&ret.stderr);
+                        log_content = result.to_string();
                     }
                 }
                 Err(e) => {

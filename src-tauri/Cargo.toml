@@ -30,6 +30,7 @@ tokio = { version = "1", features = ["full"] }
 tokio-cron-scheduler = "*" 
 uuid = { version = "1", features = ["v4"] }
 git2 = "0.18.2"
+encoding_rs = "0.8.33"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
