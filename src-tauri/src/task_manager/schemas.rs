@@ -8,6 +8,7 @@ pub struct Job {
     pub next_at: Option<String>,
     pub cron: String,
 
+    pub pre_success: Option<bool>, // 上次执行是否成功
     pub app_name: String,
     pub category: String,
     pub url: String,
@@ -33,6 +34,7 @@ pub struct JobUpdate {
     pub app_name: Option<String>,
     pub status: Option<bool>,
     pub cron: Option<String>,
+    pub pre_success: Option<bool>, // 上一次是否执行成功
 }
 
 #[derive(serde::Serialize)]
@@ -56,6 +58,7 @@ pub struct JobModel {
     pub status: bool, // 是否启用
     pub cron: String,
 
+    pub pre_success: Option<bool>, // 上一次是否执行成功
     pub app_name: String,
     pub category: String,
     pub url: String,

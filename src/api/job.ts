@@ -8,6 +8,7 @@ type Job = {
   next_at: string;
   // updated_at: string;
   cron: string;
+  pre_success: boolean; // 上一次是否执行成功
 
   app_name: string;
   category: string;

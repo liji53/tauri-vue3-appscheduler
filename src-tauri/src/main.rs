@@ -37,7 +37,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     cron TEXT,
                     app_name TEXT NOT NULL,
                     category TEXT,
-                    url TEXT NOT NULL
+                    url TEXT NOT NULL,
+                    pre_success BOOLEAN
                 )",
                 (),
             )?;

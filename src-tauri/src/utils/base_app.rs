@@ -3,6 +3,7 @@ use super::schemas::{
     Notice, NoticeItem,
 };
 use super::{is_multiple_selectd_componet, is_selectd_componet, task_config_file, task_log_file};
+use crate::task_manager::view::run_after;
 use chrono::{DateTime, Local};
 use encoding_rs::GBK;
 use indexmap::IndexMap;
@@ -63,7 +64,6 @@ pub trait RepoCommand {
     }
 
     /// 执行应用程序，python main.py
-    /// todo: 指定配置参数，任务执行结果记入到数据库中
     fn run_app(
         &self,
         window: Option<Window>,
@@ -99,7 +99,7 @@ pub trait RepoCommand {
                     if ret.status.success() {
                         success = true;
                         description = "任务执行成功".to_string();
-                        let (result, _, _) = GBK.decode(&ret.stdout);
+                        let (result, _, _) = GBK.decode(&ret.stderr);
                         log_content = result.to_string();
                     } else {
                         description = "任务脚本执行报错".to_string();
@@ -141,6 +141,8 @@ pub trait RepoCommand {
             {
                 let _ = fd.write_all(log_content.as_bytes());
             }
+            // 写数据库
+            let _ = run_after(task_id, success);
         });
 
         Ok(())

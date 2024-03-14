@@ -22,6 +22,15 @@ defineOptions({
   name: "Job"
 });
 
+const tableRowClassName = data => {
+  if (data.row.pre_success === false) {
+    return "warning-row";
+  } else if (data.row.pre_success === true) {
+    return "success-row";
+  }
+  return "";
+};
+
 const dynFormKey = ref(0);
 const formRef = ref();
 const {
@@ -126,112 +135,116 @@ const {
             background: 'var(--el-fill-color-light)',
             color: 'var(--el-text-color-primary)'
           }"
+          :row-class-name="tableRowClassName"
           @page-size-change="handleSizeChange"
           @page-current-change="handleCurrentChange"
         >
           <template #operation="{ row }">
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="编辑"
-              placement="top"
-              :hide-after="10"
-            >
-              <el-button
-                type="primary"
-                size="small"
-                :icon="useRenderIcon(EditPen)"
-                @click="openDialog('编辑', row)"
-                circle
-              />
-            </el-tooltip>
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="运行"
-              placement="top"
-              :hide-after="10"
-            >
-              <el-button
-                type="info"
-                size="small"
-                :icon="useRenderIcon(Run)"
-                @click="handleRun(row)"
-                circle
-              />
-            </el-tooltip>
-            <el-button
-              type="success"
-              size="small"
-              :icon="useRenderIcon(Clock)"
-              @click="handleTimer(row)"
-              circle
-            />
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="配置"
-              placement="top"
-              :hide-after="10"
-            >
-              <el-button
-                type="warning"
-                size="small"
-                :icon="useRenderIcon(Setting)"
-                @click="
-                  dynFormKey++;
-                  handleConfig(row);
-                "
-                circle
-              />
-            </el-tooltip>
-            <el-popconfirm
-              :title="`是否确认删除任务 ${row.name}`"
-              @confirm="handleDelete(row)"
-            >
-              <template #reference>
+            <div>
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                content="编辑"
+                placement="top"
+                :hide-after="10"
+              >
                 <el-button
-                  type="danger"
+                  type="primary"
                   size="small"
-                  :icon="useRenderIcon(Delete)"
+                  :icon="useRenderIcon(EditPen)"
+                  @click="openDialog('编辑', row)"
                   circle
                 />
-              </template>
-            </el-popconfirm>
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="日志"
-              placement="top"
-              :hide-after="0"
-            >
+              </el-tooltip>
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                content="运行"
+                placement="top"
+                :hide-after="10"
+              >
+                <el-button
+                  type="info"
+                  size="small"
+                  :icon="useRenderIcon(Run)"
+                  @click="handleRun(row)"
+                  circle
+                />
+              </el-tooltip>
               <el-button
-                type="primary"
+                type="success"
                 size="small"
-                :icon="useRenderIcon(LogPic)"
-                @click="handleLog(row)"
+                :icon="useRenderIcon(Clock)"
+                @click="handleTimer(row)"
                 circle
               />
-            </el-tooltip>
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="结果"
-              placement="top"
-              :hide-after="0"
-            >
-              <el-button
-                type="info"
-                size="small"
-                :icon="useRenderIcon(Document)"
-                @click="handleResult(row)"
-                circle
-              />
-            </el-tooltip>
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                content="配置"
+                placement="top"
+                :hide-after="10"
+              >
+                <el-button
+                  type="warning"
+                  size="small"
+                  :icon="useRenderIcon(Setting)"
+                  @click="
+                    dynFormKey++;
+                    handleConfig(row);
+                  "
+                  circle
+                />
+              </el-tooltip>
+              <el-popconfirm
+                :title="`是否确认删除任务 ${row.name}`"
+                @confirm="handleDelete(row)"
+              >
+                <template #reference>
+                  <el-button
+                    type="danger"
+                    size="small"
+                    :icon="useRenderIcon(Delete)"
+                    circle
+                  />
+                </template>
+              </el-popconfirm>
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                content="日志"
+                placement="top"
+                :hide-after="0"
+              >
+                <el-button
+                  type="primary"
+                  size="small"
+                  :icon="useRenderIcon(LogPic)"
+                  @click="handleLog(row)"
+                  circle
+                />
+              </el-tooltip>
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                content="结果"
+                placement="top"
+                :hide-after="0"
+              >
+                <el-button
+                  type="info"
+                  size="small"
+                  :icon="useRenderIcon(Document)"
+                  @click="handleResult(row)"
+                  circle
+                />
+              </el-tooltip>
+            </div>
           </template>
         </pure-table>
       </template>
     </PureTableBar>
+
     <!-- 定时设置 -->
     <el-drawer
       v-model="crontabVisible"
@@ -295,14 +308,19 @@ const {
   </div>
 </template>
 
-<style scoped lang="scss">
-:deep(.el-dropdown-menu__item i) {
+<style>
+.el-table .warning-row {
+  --el-table-tr-bg-color: var(--el-color-warning-light-9);
+}
+.el-table .success-row {
+  --el-table-tr-bg-color: var(--el-color-success-light-9);
+}
+
+.el-dropdown-menu__item i {
   margin: 0;
 }
 
-.search-form {
-  :deep(.el-form-item) {
-    margin-bottom: 12px;
-  }
+.search-form .el-form-item {
+  margin-bottom: 8px;
 }
 </style>

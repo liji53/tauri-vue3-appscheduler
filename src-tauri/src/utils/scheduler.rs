@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use super::base_app::RepoCommand;
-use super::database::db_session;
 use super::svn_app::SvnRepo;
+use crate::task_manager::view::get_cron_tasks;
 use tokio_cron_scheduler::{Job, JobScheduler};
 use uuid::Uuid;
 
@@ -30,26 +30,6 @@ fn delete_guid(id: u32) {
     unsafe {
         JOB_GUIDS.as_mut().unwrap().remove(&id);
     }
-}
-
-// 查询设置了定时且状态为True的任务
-fn get_cron_tasks() -> Result<Vec<Result<(u32, String, String, String), rusqlite::Error>>, String> {
-    let conn = db_session(Some("init scheduler失败"))?;
-
-    let sql_stmt = "SELECT id, cron, url, name FROM task WHERE status = 1 AND cron != ''";
-    let mut stmt = conn
-        .prepare(sql_stmt)
-        .map_err(|e| format!("数据库查询失败: {e}"))?;
-
-    let job_iter = stmt
-        .query_map([], |row| {
-            let row_tuple: (u32, String, String, String) =
-                (row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?);
-            Ok(row_tuple)
-        })
-        .map_err(|e| format!("数据库查询失败: {e}"))?;
-
-    Ok(job_iter.into_iter().collect::<Vec<_>>())
 }
 
 /// 启动定时任务

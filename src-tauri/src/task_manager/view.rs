@@ -45,6 +45,7 @@ pub fn get_jobs(
                 app_name: job.app_name,
                 category: job.category,
                 url: job.url,
+                pre_success: job.pre_success,
             }
         })
         .collect();
@@ -94,6 +95,7 @@ pub fn create_job(data: String) -> Result<(), String> {
                     app_name: job_in.app_name,
                     category: app_store_item.category.to_string(),
                     url: app_store_item.url.to_string(),
+                    pre_success: None,
                 },
             )
             .map_err(|e| format!("{}, {}", error, e)),
@@ -241,7 +243,7 @@ pub fn set_job_config(id: u32, data: String) -> Result<(), String> {
 /// 获取任务的执行结果
 #[tauri::command]
 pub fn get_job_result(id: u32) -> Result<JobResult, String> {
-    let error = "获取日志失败";
+    let error = "获取执行结果失败";
     let conn = db_session(Some(error))?;
     let job = service::get_by_id(&conn, id)?;
     if job.is_none() {
@@ -259,4 +261,42 @@ pub fn get_job_result(id: u32) -> Result<JobResult, String> {
         created_at: "".to_string(),
         html_path,
     })
+}
+
+/// 执行任务之后的回调 ，用于保存任务的执行结果
+pub fn run_after(id: u32, success: bool) -> Result<(), String> {
+    let conn = db_session(Some(""))?;
+    service::update(
+        &conn,
+        id,
+        &JobUpdate {
+            name: None,
+            remark: None,
+            app_name: None,
+            status: None,
+            cron: None,
+            pre_success: Some(success),
+        },
+    )
+}
+
+/// 查询设置了定时且状态为True的任务
+pub fn get_cron_tasks(
+) -> Result<Vec<Result<(u32, String, String, String), rusqlite::Error>>, String> {
+    let conn = db_session(Some("init scheduler失败"))?;
+
+    let sql_stmt = "SELECT id, cron, url, name FROM task WHERE status = 1 AND cron != ''";
+    let mut stmt = conn
+        .prepare(sql_stmt)
+        .map_err(|e| format!("数据库查询失败: {e}"))?;
+
+    let job_iter = stmt
+        .query_map([], |row| {
+            let row_tuple: (u32, String, String, String) =
+                (row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?);
+            Ok(row_tuple)
+        })
+        .map_err(|e| format!("数据库查询失败: {e}"))?;
+
+    Ok(job_iter.into_iter().collect::<Vec<_>>())
 }
