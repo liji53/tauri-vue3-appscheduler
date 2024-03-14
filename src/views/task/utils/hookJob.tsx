@@ -20,6 +20,7 @@ import { type JobItemProps } from "./types";
 import { type PaginationProps } from "@pureadmin/table";
 import { reactive, ref, onMounted, h, computed, toRaw } from "vue";
 import { open } from "@tauri-apps/api/shell";
+import { listen } from "@tauri-apps/api/event";
 
 const nextAtStyle = computed(() => {
   return (next_at: string) => {
@@ -74,6 +75,8 @@ export function useJob() {
     created_at: "",
     content: ""
   });
+  // 是否正在执行的状态
+  const runStatus = ref([]);
 
   const columns: TableColumnList = [
     {
@@ -136,6 +139,23 @@ export function useJob() {
     }
   ];
 
+  listen("run_status", (event: any) => {
+    type Status = {
+      id: number;
+      is_success: boolean;
+    };
+    const status: Status = event.payload;
+    const index = runStatus.value.indexOf(status.id);
+    if (index > -1) {
+      runStatus.value.splice(index, 1);
+    }
+    dataList.value.map((value: any) => {
+      if (value.id == status.id) {
+        value.pre_success = status.is_success;
+      }
+    });
+  });
+
   // 使能状态切换
   function onChangeStatus({ row, index }) {
     ElMessageBox.confirm(
@@ -196,6 +216,7 @@ export function useJob() {
         message(`开始运行【${row.name}】`, {
           type: "success"
         });
+        runStatus.value.push(row.id);
       })
       .catch(error => {
         message(error, { type: "error" });
@@ -409,6 +430,7 @@ export function useJob() {
     log,
     handleLog,
     handleResult,
-    categories
+    categories,
+    runStatus
   };
 }

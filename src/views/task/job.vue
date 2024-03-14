@@ -59,7 +59,8 @@ const {
   log,
   handleLog,
   handleResult,
-  categories
+  categories,
+  runStatus
 } = useJob();
 </script>
 
@@ -140,7 +141,7 @@ const {
           @page-current-change="handleCurrentChange"
         >
           <template #operation="{ row }">
-            <div>
+            <div v-loading="runStatus.includes(row.id)">
               <el-tooltip
                 class="box-item"
                 effect="dark"

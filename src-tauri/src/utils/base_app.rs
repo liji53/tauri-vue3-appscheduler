@@ -1,6 +1,6 @@
 use super::schemas::{
     AppStoreConfigProp, AppStoreItem, FormData, FormEntry, FormItemConfig, FormItems, FormValue,
-    Notice, NoticeItem,
+    Notice, NoticeItem, RunStatus,
 };
 use super::{is_multiple_selectd_componet, is_selectd_componet, task_config_file, task_log_file};
 use crate::task_manager::view::run_after;
@@ -117,6 +117,15 @@ pub trait RepoCommand {
             if let Some(window) = window {
                 let now: DateTime<Local> = Local::now();
                 let formatted_time = now.format("%m-%d %H:%M:%S").to_string();
+                window
+                    .emit(
+                        "run_status",
+                        RunStatus {
+                            id: task_id,
+                            is_success: success,
+                        },
+                    )
+                    .unwrap();
                 window
                 .emit(
                     "run_app_result",

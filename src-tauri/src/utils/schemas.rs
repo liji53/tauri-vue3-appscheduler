@@ -85,6 +85,12 @@ pub struct Notice {
     pub name: String,
     pub list: Vec<NoticeItem>,
 }
+/// 通知任务管理页面，任务的执行结果
+#[derive(Clone, serde::Serialize)]
+pub struct RunStatus {
+    pub id: u32,
+    pub is_success: bool,
+}
 
 /// 本程序的配置文件
 #[derive(serde::Serialize, serde::Deserialize)]
