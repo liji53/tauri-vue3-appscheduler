@@ -42,7 +42,7 @@ const {
           v-model="form.appName"
           placeholder="请输入应用名称"
           clearable
-          class="!w-[200px]"
+          class="!w-[160px]"
         />
       </el-form-item>
       <el-form-item label="应用分类：" prop="category">
@@ -65,7 +65,7 @@ const {
           v-model="form.status"
           placeholder="请选择状态"
           clearable
-          class="!w-[180px]"
+          class="!w-[120px]"
         >
           <el-option label="已安装" :value="'已安装'" />
           <el-option label="未安装" :value="'未安装'" />
