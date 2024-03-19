@@ -29,8 +29,8 @@ export const getAppList = (params: object) => {
   return invoke<AppResult>("get_apps", { ...params });
 };
 
-export const installApp = (repoUrl: string) => {
-  return invoke("install_app", { repoUrl });
+export const installApp = (repoUrl: string, isInstallByVenv: boolean) => {
+  return invoke("install_app", { repoUrl, isInstallByVenv });
 };
 
 export const uninstallApp = (repoUrl: string) => {

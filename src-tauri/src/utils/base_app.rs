@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 use ini::Ini;
 use std::io::Write;
 use std::path::Path;
-use std::{env, fs, thread};
+use std::{env, fs, thread, vec};
 use tauri::Window;
 
 // 版本管理工具命令 接口
@@ -43,15 +43,39 @@ pub trait RepoCommand {
     }
 
     /// 安装python项目中的依赖库，pip install -r requirements.txt
-    fn install_requirements(&self) -> Result<(), String> {
+    fn install_requirements(&self, is_install_by_venv: bool) -> Result<(), String> {
         let requirement_path = Path::new(self.local_path()).join("requirements.txt");
         if !requirement_path.exists() {
             eprintln!("requirements.txt文件不存在");
             return Ok(());
         }
         let requirement_path = requirement_path.to_string_lossy().to_string();
+        let output;
 
-        let output = super::command_warp(vec!["pip", "install", "-r", &requirement_path])?;
+        // 虚拟环境 & 安装requirements.txt
+        if is_install_by_venv {
+            // venv 安装
+            let command_out = super::command_warp(
+                vec!["python", "-m", "venv", ".\\venv"],
+                Some(&self.local_path()),
+            )?;
+            if !command_out.status.success() {
+                return Err("创建虚拟环境失败".to_string());
+            }
+            let pip_path = Path::new(&self.local_path()).join("venv\\Scripts\\pip.exe");
+            output = super::command_warp(
+                vec![
+                    pip_path.to_str().unwrap(),
+                    "install",
+                    "-r",
+                    &requirement_path,
+                ],
+                Some(&self.local_path()),
+            )?;
+        } else {
+            output = super::command_warp(vec!["pip", "install", "-r", &requirement_path], None)?;
+        }
+
         if output.status.success() {
             Ok(())
         } else {
@@ -83,12 +107,28 @@ pub trait RepoCommand {
         thread::spawn(move || {
             // 起一个进程执行 python main.py
             let _ = env::set_current_dir(&repo_path);
-            let output = super::command_warp(vec![
-                "python",
-                "main.py",
-                "-f",
-                task_config_file(task_id).as_str(),
-            ]);
+            let output;
+            if Path::new(&repo_path).join("venv").exists() {
+                output = super::command_warp(
+                    vec![
+                        ".\\venv\\Scripts\\python.exe",
+                        "main.py",
+                        "-f",
+                        task_config_file(task_id).as_str(),
+                    ],
+                    None,
+                );
+            } else {
+                output = super::command_warp(
+                    vec![
+                        "python",
+                        "main.py",
+                        "-f",
+                        task_config_file(task_id).as_str(),
+                    ],
+                    None,
+                );
+            }
 
             // 解析任务执行的结果
             let mut success = false;

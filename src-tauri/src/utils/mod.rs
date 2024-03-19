@@ -118,11 +118,21 @@ pub fn is_multiple_selectd_componet(componet: &String) -> bool {
     ["CheckBox", "Selecteds"].contains(&componet.as_str())
 }
 /// 执行cmd命令
-pub fn command_warp(args: Vec<&str>) -> Result<Output, String> {
+pub fn command_warp(args: Vec<&str>, curent_dir: Option<&str>) -> Result<Output, String> {
     let commnd_args = args.iter().skip(1).collect::<Vec<_>>();
-    Command::new(args[0])
-        .creation_flags(0x08000000) // 执行时不会出现窗口
-        .args(commnd_args)
-        .output()
-        .map_err(|e| format!("{}执行异常：{}", args[0], e))
+
+    if !curent_dir.is_none() {
+        Command::new(args[0])
+            .creation_flags(0x08000000) // 执行时不会出现窗口
+            .args(commnd_args)
+            .current_dir(curent_dir.unwrap())
+            .output()
+            .map_err(|e| format!("{}执行异常：{}", args[0], e))
+    } else {
+        Command::new(args[0])
+            .creation_flags(0x08000000) // 执行时不会出现窗口
+            .args(commnd_args)
+            .output()
+            .map_err(|e| format!("{}执行异常：{}", args[0], e))
+    }
 }

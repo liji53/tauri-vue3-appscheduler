@@ -31,6 +31,9 @@ export function useApp() {
   const categories = ref<[string?]>([]);
   const apps = ref<Array<App>>([]);
   const readme = ref("");
+  const dialogVisible = ref(false);
+  const installByVenv = ref(true);
+  const needInstalledApp = ref();
 
   // 分页
   const onPageSizeChange = (val: number) => {
@@ -66,8 +69,13 @@ export function useApp() {
 
   // 用于响应AppCard的事件
   const handleInstallApp = (app: App) => {
+    dialogVisible.value = true;
+    needInstalledApp.value = app;
+  };
+  const onInstallApp = () => {
     loading.value = true;
-    installApp(app.url)
+    const app = needInstalledApp.value;
+    installApp(app.url, installByVenv.value)
       .then(() => {
         message("应用安装成功!", { type: "success" });
         onSearch();
@@ -77,6 +85,7 @@ export function useApp() {
       })
       .finally(() => {
         loading.value = false;
+        installByVenv.value = true;
       });
   };
   const handleUninstallApp = (app: App) => {
@@ -139,6 +148,9 @@ export function useApp() {
     handleInstallApp,
     handleReadmeApp,
     handleUninstallApp,
-    handleUpgradeApp
+    handleUpgradeApp,
+    dialogVisible,
+    installByVenv,
+    onInstallApp
   };
 }

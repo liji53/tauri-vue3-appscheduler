@@ -76,11 +76,11 @@ pub fn get_apps(
 
 /// 安装应用，下载远程应用到本地
 #[tauri::command]
-pub fn install_app(repo_url: String) -> Result<(), String> {
+pub fn install_app(repo_url: String, is_install_by_venv: bool) -> Result<(), String> {
     let repo = get_repo(repo_url);
     repo.checkout()
         .map_err(|e| format!("安装应用失败, {}", e))?;
-    repo.install_requirements()
+    repo.install_requirements(is_install_by_venv)
         .map_err(|e| format!("安装应用成功, 但{}", e))
 }
 

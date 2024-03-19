@@ -25,13 +25,16 @@ impl RepoCommand for SvnRepo {
             Some(file) => format!("{}/{}", self.url, file),
             None => self.url.clone(),
         };
-        let output = super::command_warp(vec![
-            "svn",
-            "cat",
-            &file_uri,
-            "--non-interactive",
-            "--trust-server-cert",
-        ])?;
+        let output = super::command_warp(
+            vec![
+                "svn",
+                "cat",
+                &file_uri,
+                "--non-interactive",
+                "--trust-server-cert",
+            ],
+            None,
+        )?;
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).to_string())
         } else {
@@ -42,13 +45,16 @@ impl RepoCommand for SvnRepo {
     }
 
     fn update(&self) -> Result<(), String> {
-        let output = super::command_warp(vec![
-            "svn",
-            "update",
-            &self.local_path,
-            "--non-interactive",
-            "--trust-server-cert",
-        ])?;
+        let output = super::command_warp(
+            vec![
+                "svn",
+                "update",
+                &self.local_path,
+                "--non-interactive",
+                "--trust-server-cert",
+            ],
+            None,
+        )?;
 
         if output.status.success() {
             Ok(())
@@ -61,14 +67,17 @@ impl RepoCommand for SvnRepo {
 
     fn checkout(&self) -> Result<(), String> {
         /* 默认使用本地svn的账号 */
-        let output = super::command_warp(vec![
-            "svn",
-            "checkout",
-            &self.url,
-            &self.local_path,
-            "--non-interactive",
-            "--trust-server-cert",
-        ])?;
+        let output = super::command_warp(
+            vec![
+                "svn",
+                "checkout",
+                &self.url,
+                &self.local_path,
+                "--non-interactive",
+                "--trust-server-cert",
+            ],
+            None,
+        )?;
 
         if output.status.success() {
             Ok(())

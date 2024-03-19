@@ -9,6 +9,7 @@ use std::{fs, path::Path};
 use tauri::Window;
 
 /// 获取任务列表
+/// todo: 卸载应用之后，任务没有删除
 #[tauri::command]
 pub fn get_jobs(
     name: String,

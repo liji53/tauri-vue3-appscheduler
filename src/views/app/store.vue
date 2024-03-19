@@ -25,7 +25,10 @@ const {
   handleInstallApp,
   handleReadmeApp,
   handleUninstallApp,
-  handleUpgradeApp
+  handleUpgradeApp,
+  dialogVisible,
+  installByVenv,
+  onInstallApp
 } = useApp();
 </script>
 
@@ -123,6 +126,30 @@ const {
         />
       </template>
     </div>
+
+    <el-dialog v-model="dialogVisible" title="安装应用" width="400">
+      <el-checkbox v-model="installByVenv">使用虚拟环境安装(推荐)</el-checkbox>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button
+            @click="
+              dialogVisible = false;
+              installByVenv = true;
+            "
+            >取消</el-button
+          >
+          <el-button
+            type="primary"
+            @click="
+              dialogVisible = false;
+              onInstallApp();
+            "
+          >
+            安装
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
