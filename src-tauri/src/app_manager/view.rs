@@ -1,7 +1,9 @@
 use super::schemas::{App, AppPagination, AppTree, AppTreeChildren};
 use super::utils::{exists_app, get_repo};
+use crate::task_manager::service::get_by_url;
+use crate::task_manager::view::delete_job;
 use crate::utils;
-use crate::utils::schemas::AppStoreItem;
+use crate::utils::{database::db_session, schemas::AppStoreItem};
 use std::collections::{HashMap, HashSet};
 
 const INSTALLED: &str = "已安装";
@@ -86,9 +88,16 @@ pub fn install_app(repo_url: String, is_install_by_venv: bool) -> Result<(), Str
 
 /// 卸载应用
 #[tauri::command]
-pub fn uninstall_app(repo_url: String) -> Result<(), String> {
+pub async fn uninstall_app(repo_url: String) -> Result<(), String> {
+    let error = "卸载应用失败";
+    let conn = db_session(Some(error))?;
+    let tasks = get_by_url(&conn, &repo_url)?;
+    for task in tasks {
+        delete_job(task.id.unwrap()).await?;
+    }
+
     let repo = get_repo(repo_url);
-    repo.delete().map_err(|e| format!("卸载应用失败, {}", e))
+    repo.delete().map_err(|e| format!("{error}, {e}"))
 }
 
 /// 升级应用

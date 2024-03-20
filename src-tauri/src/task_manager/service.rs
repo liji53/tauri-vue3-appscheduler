@@ -58,6 +58,12 @@ pub fn get_by_name(conn: &Connection, name: &String) -> Result<Option<JobModel>,
     }
 }
 
+pub fn get_by_url(conn: &Connection, url: &String) -> Result<Vec<JobModel>, String> {
+    let sql_stmt =
+        "SELECT id, name, remark, status, cron, app_name, category, url, pre_success FROM task WHERE url = ?1";
+    query(conn, sql_stmt, [url])
+}
+
 pub fn create(conn: &Connection, job_in: &JobModel) -> Result<(), String> {
     let sql = "INSERT INTO task (name, remark, status, cron, app_name, category, url, pre_success) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)";
     let params = (
